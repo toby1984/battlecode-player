@@ -160,24 +160,11 @@ public abstract class AStar<T>
 		this.destination = destination;
 	}
     
-    protected abstract boolean preconditionsValid();
-    
-    protected abstract void beforeSearchStart();    
-
     // unsynchronized method for internal use
     public PathNode<T> findPath() 
     {
-    	// extent of volume that needs to be void of obstacles
-    	// in order for the algorithm to consider it a valid target   
-    	if ( ! preconditionsValid() ) {
-    		return null;
-    	}
-    	
-    	beforeSearchStart();
-    	
     	final PathNode<T> startNode = newNode( getStart() );
     	final PathNode<T> endNode = newNode( getDestination() );
-    	
 		return findPath( startNode ,endNode );
     }
     
