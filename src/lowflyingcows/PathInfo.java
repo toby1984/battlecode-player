@@ -1,4 +1,4 @@
-package myplayer;
+package lowflyingcows;
 
 import java.util.List;
 
@@ -14,13 +14,16 @@ public final class PathInfo
 	
 	public MapLocation getStepAfter(MapLocation current) 
 	{
-		final int len = path.size();
-		for ( int i = 0 ; i < len ; i++ ) {
-			if ( path.get(i).equals( current ) ) {
-				if ( (i+1) < len ) {
-					return path.get(i+1);
+		if ( path != null ) 
+		{
+			final int len = path.size();
+			for ( int i = 0 ; i < len ; i++ ) {
+				if ( path.get(i).equals( current ) ) {
+					if ( (i+1) < len ) {
+						return path.get(i+1);
+					}
+					return null;
 				}
-				return null;
 			}
 		}
 		return null;

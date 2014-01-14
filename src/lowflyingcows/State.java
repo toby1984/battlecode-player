@@ -1,4 +1,4 @@
-package myplayer;
+package lowflyingcows;
 
 import battlecode.common.GameActionException;
 import battlecode.common.RobotController;

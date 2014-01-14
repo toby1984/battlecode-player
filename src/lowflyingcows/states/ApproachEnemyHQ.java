@@ -1,20 +1,23 @@
-package myplayer.states;
+package lowflyingcows.states;
 
 import java.util.List;
 
-import myplayer.MapLocationAStar;
-import myplayer.PathInfo;
-import myplayer.State;
-import myplayer.Utils;
+import lowflyingcows.*;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.TerrainTile;
 
-public class MoveToEnemyHQ extends State {
+public class ApproachEnemyHQ extends State {
 
 	private PathInfo pathInfo = null;
+	
+	private final FastRandom rnd;
+	
+	public ApproachEnemyHQ(FastRandom rnd) {
+		this.rnd = rnd;
+	}
 	
 	@Override
 	public State perform(RobotController rc) throws GameActionException 
@@ -23,17 +26,18 @@ public class MoveToEnemyHQ extends State {
 		if ( next == null ) 
 		{
 			final MapLocation enemyHQLocation = rc.senseEnemyHQLocation();			
-			System.out.println("Looking for path from "+rc.getLocation()+" to "+enemyHQLocation);		
-			
-			MapLocation dst = Utils.findRandomLocationNear( rc , enemyHQLocation , 5 );
+			MapLocation dst = Utils.findRandomLocationNear( rc , enemyHQLocation , MyConstants.ENEMY_HQ_SAFE_DISTANCE ,  MyConstants.ENEMY_HQ_SAFE_DISTANCE*2, rnd );
 			if ( dst != null ) {
 				List<MapLocation> path = findPath( rc , rc.getLocation() , dst );
 				if ( path != null && path.size() >= 2 ) 
 				{
 					pathInfo = new PathInfo( path );
-					System.out.println("Got path "+pathInfo.path+" from "+rc.getLocation()+" to "+enemyHQLocation);				
 					next = pathInfo.path.get(1);
+				} else {
+					System.err.println("Failed to find location near enemy HQ ?");					
 				}
+			} else {
+				System.err.println("Failed to find location near enemy HQ ?");
 			}
 		}
 		if ( next != null )
@@ -61,23 +65,26 @@ public class MoveToEnemyHQ extends State {
 		return dx <= 1 && dy <= 1;
 	}
 
-    protected static List<MapLocation> findPath(final RobotController rc,final MapLocation startLoc,final MapLocation dstLoc) {
+    protected static List<MapLocation> findPath(final RobotController rc,final MapLocation startLoc,final MapLocation dstLoc) throws GameActionException {
     	
-    	final MapLocationAStar pathFinder = new MapLocationAStar() 
+    	final MapLocationAStar pathFinder = new MapLocationAStar(startLoc,dstLoc) 
     	{
 			@Override
-			protected boolean isCloseEnoughToTarget(myplayer.AStar.PathNode<MapLocation> node) 
+			protected boolean isCloseEnoughToTarget(lowflyingcows.AStar.PathNode<MapLocation> node) 
 			{
-				return hasArrivedAtDestination( node.value , dstLoc );
+				return hasArrivedAtDestination( node.value , destination );
 			}
 
 			@Override
 			public TerrainTile senseTerrainTile(MapLocation loc) {
 				return rc.senseTerrainTile( loc );
 			}
+
+			@Override
+			public boolean isOccupied(MapLocation loc) throws GameActionException {
+				return false;
+			}
 		};
-		pathFinder.setStart( startLoc );
-		pathFinder.setDestination( dstLoc );
 		return Utils.findPath( pathFinder );
     }	
 }

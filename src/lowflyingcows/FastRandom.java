@@ -1,4 +1,4 @@
-package myplayer;
+package lowflyingcows;
 
 /**
  * An instance of this class is used to generate a stream of
@@ -93,7 +93,6 @@ public final class FastRandom
      * @see   #setSeed(long)
      */
     public FastRandom(long seed) {
-    	System.out.println("========= NEW RANDOM ==========");
     	this.currentSeed = initialScramble(seed);
     }
 

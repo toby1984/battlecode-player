@@ -1,12 +1,17 @@
-package myplayer;
+package lowflyingcows;
 
+import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.TerrainTile;
 
 public abstract class MapLocationAStar extends AStar<MapLocation> {
 
+	public MapLocationAStar(MapLocation start, MapLocation destination) {
+		super(start, destination);
+	}
+
 	@Override
-	protected float calcMovementCost(myplayer.AStar.PathNode<MapLocation> current) 
+	protected float calcMovementCost(lowflyingcows.AStar.PathNode<MapLocation> current) 
 	{
         float cost=0;
         if( current.parent != null ) 
@@ -18,17 +23,19 @@ public abstract class MapLocationAStar extends AStar<MapLocation> {
 	}
 	
 	@Override
-	protected float calcEstimatedCost( myplayer.AStar.PathNode<MapLocation> node) 
+	protected float calcEstimatedCost( lowflyingcows.AStar.PathNode<MapLocation> node) 
 	{
     	// WEIGHTED A-STAR !!!
-    	float dist = (float) Math.sqrt( getDestination().distanceSquaredTo(  node.value ) );
+    	float dist = (float) Math.sqrt( destination.distanceSquaredTo(  node.value ) );
 		return 4 * dist;
 	}
 	
 	public abstract TerrainTile senseTerrainTile(MapLocation loc);
 
+	public abstract boolean isOccupied(MapLocation loc) throws GameActionException;
+	
 	@Override
-	protected void scheduleNeighbors(myplayer.AStar.PathNode<MapLocation> parent) 
+	protected void scheduleNeighbors(lowflyingcows.AStar.PathNode<MapLocation> parent) throws GameActionException 
 	{
 		int x = parent.value.x;
 		int y = parent.value.y;
@@ -45,7 +52,9 @@ public abstract class MapLocationAStar extends AStar<MapLocation> {
 					switch(tile) {
 						case NORMAL:
 						case ROAD:
-							maybeAddNeighbor( parent , newLocation );									
+							if ( ! isOccupied( newLocation ) ) {
+								maybeAddNeighbor( parent , newLocation );
+							}
 							break;
 						default:
 					}

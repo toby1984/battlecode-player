@@ -1,6 +1,6 @@
-package myplayer.states;
+package lowflyingcows.states;
 
-import myplayer.State;
+import lowflyingcows.State;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
@@ -8,11 +8,11 @@ import battlecode.common.Robot;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 
-public class AttackEnemy extends State {
+public class Attacking extends State {
 
 	private final Robot enemy;
 	
-	public AttackEnemy(Robot enemy) {
+	public Attacking(Robot enemy) {
 		this.enemy=enemy;
 	}
 	

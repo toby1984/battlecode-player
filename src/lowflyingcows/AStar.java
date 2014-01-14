@@ -1,6 +1,8 @@
-package myplayer;
+package lowflyingcows;
 
 import java.util.*;
+
+import battlecode.common.GameActionException;
 
 
 public abstract class AStar<T>
@@ -12,6 +14,9 @@ public abstract class AStar<T>
     // nodes ruled out
     private final Set<PathNode<T>> closeList = new HashSet<PathNode<T>>();
 	
+    protected T start;
+    protected T destination;
+    
     public final static class PathNode<V> implements Comparable<PathNode<V>>
     {
         public PathNode<V> parent;
@@ -131,44 +136,20 @@ public abstract class AStar<T>
         openList.add( node );
 	}    
 	
-	public AStar() {
-	}
-	
-    private T start;
-    private T destination;
-    
-    protected T getStart() {
-    	return start;
-    }
-    
-    protected T getDestination() {
-    	return destination;
-    }
-    
-    public void setStart(T start) 
-    {
-    	if (start == null) {
-			throw new IllegalArgumentException("start must not be null");
-		}
+	public AStar(T start,T destination) {
 		this.start = start;
-	}
-    
-    public void setDestination(T destination) {
-    	if (destination == null) {
-			throw new IllegalArgumentException("destination must not be null");
-		}
 		this.destination = destination;
 	}
-    
-    // unsynchronized method for internal use
-    public PathNode<T> findPath() 
+	
+    public PathNode<T> findPath() throws GameActionException 
     {
-    	final PathNode<T> startNode = newNode( getStart() );
-    	final PathNode<T> endNode = newNode( getDestination() );
+    	final PathNode<T> startNode = new PathNode<T>( start );
+    	final PathNode<T> endNode = new PathNode<T>( destination );
+		System.out.println("Looking for path from "+startNode.value+" to "+endNode.value);
 		return findPath( startNode ,endNode );
     }
     
-    private PathNode<T> findPath(PathNode<T> start,PathNode<T> target) 
+    private PathNode<T> findPath(PathNode<T> start,PathNode<T> target) throws GameActionException 
     {
         if ( start.equals( target ) ) { // trivial case
             return start;
@@ -219,19 +200,11 @@ public abstract class AStar<T>
 
     protected abstract float calcEstimatedCost(PathNode<T> node);
 
-    protected abstract void scheduleNeighbors(PathNode<T> parent); 
-    
-    protected PathNode<T> newNode(T value) {
-    	return new PathNode<T>(value);
-    }
-    
-    protected PathNode<T> newNode(T value,PathNode<T> parent) {
-    	return new PathNode<T>(value,parent);
-    }    
+    protected abstract void scheduleNeighbors(PathNode<T> parent) throws GameActionException; 
     
     protected final void maybeAddNeighbor(PathNode<T> parent, T point)
     {
-        final PathNode<T> newNode = newNode( point , parent );
+        final PathNode<T> newNode = new PathNode<T>( point , parent );
         if ( ! closeList.contains(newNode) ) 
         {
             final PathNode<T> existing = openMap.get(newNode);
