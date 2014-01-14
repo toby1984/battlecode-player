@@ -1,6 +1,6 @@
-package lowflyingcows.states;
+package lowflyingcow.states;
 
-import lowflyingcows.State;
+import lowflyingcow.State;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
@@ -20,7 +20,7 @@ public class Attacking extends State {
 	public State perform(RobotController rc) throws GameActionException 
 	{
 		if ( ! rc.canSenseObject( enemy ) || enemyIsDead(rc) ) {
-			return null; // either dead or out of range
+			return null; // either dead or out of sensor range
 		}
 		
 		MapLocation enemyLocation = rc.senseLocationOf( enemy );

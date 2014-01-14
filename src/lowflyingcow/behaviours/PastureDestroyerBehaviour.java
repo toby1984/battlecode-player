@@ -1,11 +1,11 @@
-package lowflyingcows.behaviours;
+package lowflyingcow.behaviours;
 
 import java.util.List;
 
-import lowflyingcows.*;
-import lowflyingcows.states.AttackEnemiesInSight;
-import lowflyingcows.states.Fleeing;
-import lowflyingcows.states.GotoLocation;
+import lowflyingcow.*;
+import lowflyingcow.states.AttackEnemiesInSight;
+import lowflyingcow.states.Fleeing;
+import lowflyingcow.states.GotoLocation;
 import battlecode.common.*;
 
 public class PastureDestroyerBehaviour implements IRobotBehaviour {

@@ -1,10 +1,10 @@
-package lowflyingcows;
+package lowflyingcow;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import lowflyingcows.AStar.PathNode;
+import lowflyingcow.AStar.PathNode;
 import battlecode.common.*;
 
 public class Utils {
@@ -193,6 +193,11 @@ public class Utils {
 			return null;
 		}
 		return new MapLocation( (int) Math.round( mx/count) , (int) Math.round( my / count) );		
+	}
+	
+	public static boolean isThreat(RobotInfo info) throws GameActionException 
+	{
+		return info.type == RobotType.SOLDIER || info.type == RobotType.HQ;
 	}
 	
 	public static List<Robot> getThreats(RobotController rc,Robot[] enemies) throws GameActionException {

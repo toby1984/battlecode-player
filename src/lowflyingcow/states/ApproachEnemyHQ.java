@@ -1,8 +1,8 @@
-package lowflyingcows.states;
+package lowflyingcow.states;
 
 import java.util.List;
 
-import lowflyingcows.*;
+import lowflyingcow.*;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
@@ -70,7 +70,7 @@ public class ApproachEnemyHQ extends State {
     	final MapLocationAStar pathFinder = new MapLocationAStar(startLoc,dstLoc) 
     	{
 			@Override
-			protected boolean isCloseEnoughToTarget(lowflyingcows.AStar.PathNode<MapLocation> node) 
+			protected boolean isCloseEnoughToTarget(lowflyingcow.AStar.PathNode<MapLocation> node) 
 			{
 				return hasArrivedAtDestination( node.value , destination );
 			}

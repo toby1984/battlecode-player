@@ -1,4 +1,4 @@
-package lowflyingcows;
+package lowflyingcow;
 
 import java.util.List;
 

@@ -1,8 +1,8 @@
-package lowflyingcows.states;
+package lowflyingcow.states;
 
-import lowflyingcows.FastRandom;
-import lowflyingcows.State;
-import lowflyingcows.Utils;
+import lowflyingcow.FastRandom;
+import lowflyingcow.State;
+import lowflyingcow.Utils;
 import battlecode.common.*;
 
 public class Fleeing extends State {

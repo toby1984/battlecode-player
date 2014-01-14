@@ -1,8 +1,8 @@
-package lowflyingcows.behaviours;
+package lowflyingcow.behaviours;
 
-import lowflyingcows.*;
-import lowflyingcows.states.Attacking;
-import lowflyingcows.states.Fleeing;
+import lowflyingcow.*;
+import lowflyingcow.states.Attacking;
+import lowflyingcow.states.Fleeing;
 import battlecode.common.*;
 
 public class CowboyBehaviour implements IRobotBehaviour {

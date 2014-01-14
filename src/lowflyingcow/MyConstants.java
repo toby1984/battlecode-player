@@ -1,4 +1,4 @@
-package lowflyingcows;
+package lowflyingcow;
 
 import battlecode.common.RobotType;
 
@@ -31,4 +31,10 @@ public interface MyConstants
 	 * a {@link RobotType#SOLDIER} to become a {@link RobotType#PASTR}. 
 	 */
 	public static final int MIN_COWS_FOR_PASTURE = 1000;
+
+	/**
+	 * Number of successive movement failures before re-calculating path
+	 * to target. 
+	 */
+	public static final int MAX_PATH_MOVEMENT_FAILURES = 4;
 }

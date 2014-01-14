@@ -1,9 +1,10 @@
-package lowflyingcows.states;
+package lowflyingcow.states;
 
 import java.util.List;
 
-import lowflyingcows.PathInfo;
-import lowflyingcows.State;
+import lowflyingcow.MyConstants;
+import lowflyingcow.PathInfo;
+import lowflyingcow.State;
 import battlecode.common.*;
 
 public abstract class GotoLocation extends State {
@@ -51,16 +52,17 @@ public abstract class GotoLocation extends State {
 				} else {
 					rc.sneak( direction );
 				}
+				movementFailureCount=0;
 			} 
 			else 
 			{
 				movementFailureCount++;
 				System.out.println("Failed to move "+myLocation+" -> "+next+" (count: "+movementFailureCount+")");
-				if ( movementFailureCount > 3 ) 
+				if ( movementFailureCount > MyConstants.MAX_PATH_MOVEMENT_FAILURES ) 
 				{
+					// 	movement failed too many times, some new obstacle is blocking us...recalculate path					
 					System.out.println("Re-calculating path "+myLocation+" -> "+next);						
 					movementFailureCount = 0;
-					// 	recalculate path
 					pathInfo = new PathInfo( recalculatePath(rc) );
 					if ( pathInfo.path == null ) {
 						System.out.println("Failed to recalculating path" );						

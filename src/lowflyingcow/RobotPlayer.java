@@ -1,6 +1,6 @@
-package lowflyingcows;
+package lowflyingcow;
 
-import lowflyingcows.behaviours.*;
+import lowflyingcow.behaviours.*;
 import battlecode.common.RobotController;
 import battlecode.common.RobotType;
 
@@ -22,6 +22,7 @@ public class RobotPlayer
 				}
 				if ( behaviour == null ) {
 					behaviour = chooseRobotBehaviour(rc);
+					rc.setIndicatorString( 0 , "Type: "+behaviour.getClass().getSimpleName());
 				}
 				behaviour.perform( rc );
 			} 
@@ -35,24 +36,24 @@ public class RobotPlayer
 	private static IRobotBehaviour chooseRobotBehaviour(RobotController rc) 
 	{
 		RobotType robotType = rc.getType();
-		switch( robotType ) {
+		switch( robotType ) 
+		{
 			case HQ:
 				System.out.println("Robot is a HQ");
 				return new HQBehaviour( random );
 			case SOLDIER:
-				float f = 0; // random.nextFloat();
+				float f = random.nextFloat();
 				if ( f <= 0.2 ) {
 					System.out.println("Robot will be a pasture destroyer");					
 					return new PastureDestroyerBehaviour( random );
 				}
 				
 				if ( f <= 0.4 ) {
-					System.out.println("Robot will be a destroyer");
-					return new DestroyerBehaviour(random);
+					System.out.println("Robot will be a cowboy");
+					return new CowboyBehaviour(rc,random);					
 				}
-				
-				System.out.println("Robot will be a cowboy");
-				return new CowboyBehaviour(rc,random);
+				System.out.println("Robot will be a destroyer");
+				return new DestroyerBehaviour(random);				
 			default:
 				return IRobotBehaviour.NOP_BEHAVIOUR;				
 		}

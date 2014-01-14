@@ -1,6 +1,6 @@
-package lowflyingcows.states;
+package lowflyingcow.states;
 
-import lowflyingcows.State;
+import lowflyingcow.State;
 import battlecode.common.*;
 
 public class AttackEnemiesInSight extends State {

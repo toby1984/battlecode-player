@@ -1,9 +1,9 @@
-package lowflyingcows.behaviours;
+package lowflyingcow.behaviours;
 
-import lowflyingcows.*;
-import lowflyingcows.states.ApproachEnemyHQ;
-import lowflyingcows.states.Attacking;
-import lowflyingcows.states.Fleeing;
+import lowflyingcow.*;
+import lowflyingcow.states.ApproachEnemyHQ;
+import lowflyingcow.states.Attacking;
+import lowflyingcow.states.Fleeing;
 import battlecode.common.*;
 
 public class DestroyerBehaviour implements IRobotBehaviour {
@@ -27,11 +27,27 @@ public class DestroyerBehaviour implements IRobotBehaviour {
 			state = state.perform( rc );
 			return;
 		} 
-		else if ( rc.getHealth() < 50 ) 
+		
+		Robot[] enemies=null;
+		if ( rc.getHealth() < 50 ) 
 		{
-			state = new Fleeing( random );
-			state = state.perform( rc );
-			return;
+//			enemies = Utils.findEnemies(rc , MyConstants.SOLDIER_SEEK_ENEMY_RANGE_SQUARED);
+//			
+//			// gauge threats
+//			double enemyHealth = 0;
+//			for ( Robot r : enemies ) 
+//			{
+//				RobotInfo ri = rc.senseRobotInfo( r ); 
+//				if ( Utils.isThreat( ri ) ) {
+//					enemyHealth += ri.health;
+//				}
+//			}
+//			
+//			if ( enemyHealth > rc.getHealth() ) {
+				state = new Fleeing( random );
+				state = state.perform( rc );
+				return;
+//			}
 		}
 		
 		if ( state instanceof Attacking ) {
@@ -39,7 +55,9 @@ public class DestroyerBehaviour implements IRobotBehaviour {
 			return;
 		}
 		
-		Robot[] enemies = Utils.findEnemies(rc , MyConstants.SOLDIER_SEEK_ENEMY_RANGE_SQUARED);
+		if ( enemies == null ) {
+			enemies = Utils.findEnemies(rc , MyConstants.SOLDIER_SEEK_ENEMY_RANGE_SQUARED);
+		}
 		
 		Robot closestEnemy = Utils.findClosestEnemy( rc , enemies);
 		if ( closestEnemy != null ) 

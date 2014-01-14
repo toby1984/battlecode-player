@@ -1,7 +1,7 @@
-package lowflyingcows.behaviours;
+package lowflyingcow.behaviours;
 
-import lowflyingcows.*;
-import lowflyingcows.states.Attacking;
+import lowflyingcow.*;
+import lowflyingcow.states.Attacking;
 import battlecode.common.*;
 
 public class HQBehaviour implements IRobotBehaviour{
@@ -32,6 +32,7 @@ public class HQBehaviour implements IRobotBehaviour{
 		if ( enemy != null ) 
 		{
 			state = new Attacking( enemy );
+			System.out.println("HQ is attacking #"+enemy.getID());
 			state.perform( rc );
 			return;
 		}
