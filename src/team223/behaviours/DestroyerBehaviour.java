@@ -80,15 +80,15 @@ public class DestroyerBehaviour extends RobotBehaviour {
 			return;
 		}
 		
+		if ( state instanceof GotoLocation ) {
+			state = state.perform( rc );
+			return;
+		}		
+		
 		// home-in on enemy HQ
 		final MapLocation enemyHQLocation = rc.senseEnemyHQLocation();
 		if ( enemyHQLocation.distanceSquaredTo( rc.getLocation() ) > MyConstants.SOLIDER_HOMEIN_ON_HQ_DISTANCE_SQUARED ) 
 		{
-			if ( state instanceof GotoLocation ) {
-				state = state.perform( rc );
-				return;
-			}
-			
 			PathInfo info = new PathInfo( findPathToHQ( rc ) );
 			if ( info.path != null ) {
 				state = new GotoLocation(info,MovementType.RUN) {

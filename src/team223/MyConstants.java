@@ -18,7 +18,7 @@ public interface MyConstants
 	/**
 	 * Closest distance to attack range of enemy HQ , used to avoid coming under fire from enemy HQ.
 	 */
-	public static final int ENEMY_HQ_SAFE_DISTANCE = 15+1;
+	public static final int ENEMY_HQ_SAFE_DISTANCE = 1 + (int) Math.sqrt( RobotType.HQ.attackRadiusMaxSquared );
 	
 	public static final int ENEMY_HQ_SAFE_DISTANCE_SRT = ENEMY_HQ_SAFE_DISTANCE*ENEMY_HQ_SAFE_DISTANCE;
 	
@@ -26,7 +26,7 @@ public interface MyConstants
 	 * If a destroyer is not currently attacking and farther away from the enemy HQ than this distance, it will 
 	 * home-in on the enemy HQ.
 	 */
-	public static final int SOLIDER_HOMEIN_ON_HQ_DISTANCE_SQUARED = (int)  ( (ENEMY_HQ_SAFE_DISTANCE*1.5f)*(ENEMY_HQ_SAFE_DISTANCE*1.5f) );
+	public static final int SOLIDER_HOMEIN_ON_HQ_DISTANCE_SQUARED = (int)  ( (ENEMY_HQ_SAFE_DISTANCE+2)*(ENEMY_HQ_SAFE_DISTANCE+2) );
 	
 	/**
 	 * Minimum number of cows that need to be present for
