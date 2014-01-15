@@ -1,7 +1,7 @@
 package team223.behaviours;
 
 import team223.FastRandom;
-import team223.IRobotBehaviour;
+import team223.RobotBehaviour;
 import team223.MyConstants;
 import team223.State;
 import team223.Utils;
@@ -13,11 +13,9 @@ import battlecode.common.Robot;
 import battlecode.common.RobotController;
 import battlecode.common.RobotType;
 
-public class HQBehaviour implements IRobotBehaviour{
+public class HQBehaviour extends RobotBehaviour{
 
 	private final FastRandom rnd;
-	
-	private State state;
 	
 	public HQBehaviour(FastRandom rnd) {
 		this.rnd=rnd;
@@ -41,6 +39,7 @@ public class HQBehaviour implements IRobotBehaviour{
 		if ( enemy != null ) 
 		{
 			state = new Attacking( enemy );
+			if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
 			if ( MyConstants.DEBUG_MODE) System.out.println("HQ is attacking #"+enemy.getID());
 			state.perform( rc );
 			return;

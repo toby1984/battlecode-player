@@ -4,7 +4,7 @@ import battlecode.common.RobotType;
 
 public interface MyConstants 
 {
-	public static final boolean DEBUG_MODE =false;
+	public static final boolean DEBUG_MODE = true;
 	
 	public static final int SOLDIER_ATTACK_RANGE = (int) Math.ceil( Math.sqrt( RobotType.SOLDIER.attackRadiusMaxSquared ) );
 	
@@ -32,7 +32,7 @@ public interface MyConstants
 	 * Minimum number of cows that need to be present for
 	 * a {@link RobotType#SOLDIER} to become a {@link RobotType#PASTR}. 
 	 */
-	public static final int MIN_COWS_FOR_PASTURE = 1000;
+	public static final int MIN_COWS_FOR_PASTURE = 600;
 
 	/**
 	 * Number of successive movement failures before re-calculating path

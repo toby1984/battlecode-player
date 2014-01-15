@@ -37,10 +37,6 @@ public abstract class GotoLocation extends State {
 		if ( hasArrivedAtDestination( myLocation , pathInfo.end() ) ) {
 			return null;
 		} 
-//		else {
-//			int dst = myLocation.distanceSquaredTo( pathInfo.end() );
-//			if ( MyConstants.DEBUG_MODE) System.out.println("distanceSqrt( "+myLocation+" -> "+pathInfo.end()+"): "+dst+" but needed <= "+RobotType.SOLDIER.attackRadiusMaxSquared );
-//		}
 		
 		MapLocation next = pathInfo.getStepAfter( myLocation );
 		if ( next != null ) 
@@ -51,12 +47,12 @@ public abstract class GotoLocation extends State {
 			}
 			if ( rc.canMove( direction ) ) 
 			{
+				movementFailureCount=0;				
 				if ( movementType == MovementType.RUN ) {
 					rc.move( direction );
 				} else {
 					rc.sneak( direction );
 				}
-				movementFailureCount=0;
 			} 
 			else 
 			{
@@ -69,15 +65,26 @@ public abstract class GotoLocation extends State {
 					movementFailureCount = 0;
 					pathInfo = new PathInfo( recalculatePath(rc) );
 					if ( pathInfo.path == null ) {
-						if ( MyConstants.DEBUG_MODE) System.out.println("Failed to recalculating path" );						
+						if ( MyConstants.DEBUG_MODE) System.out.println("ERROR: Failed to recalculate path" );						
 						return null;
 					}
 				}
 			}
 			return this;
-		}	
+		} else {
+			pathInfo = new PathInfo( recalculatePath(rc) );
+			if ( pathInfo.path != null ) {
+				return this;
+			}
+			if ( MyConstants.DEBUG_MODE) System.out.println("ERROR: At "+rc.getLocation()+" , no next step on path "+pathInfo.path );
+		}
 		return null;
 	}
 	
-	protected abstract boolean hasArrivedAtDestination(MapLocation current,MapLocation dstLoc); 
+	protected abstract boolean hasArrivedAtDestination(MapLocation current,MapLocation dstLoc);
+	
+    @Override
+    public String toString() {
+    	return getClass().getSimpleName();
+    }	
 }

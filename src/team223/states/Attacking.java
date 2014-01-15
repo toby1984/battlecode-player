@@ -43,4 +43,9 @@ public class Attacking extends State {
 		final RobotInfo info = rc.senseRobotInfo( (Robot) enemy );
 		return info.health <= 0;
 	}
+	
+    @Override
+    public String toString() {
+    	return getClass().getSimpleName();
+    }	
 }

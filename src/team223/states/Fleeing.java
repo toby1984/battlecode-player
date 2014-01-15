@@ -52,5 +52,10 @@ public class Fleeing extends State {
 		}
 		return null;
 	}
+	
+    @Override
+    public String toString() {
+    	return getClass().getSimpleName();
+    }	
 
 }

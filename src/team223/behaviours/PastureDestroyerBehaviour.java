@@ -3,7 +3,7 @@ package team223.behaviours;
 import java.util.List;
 
 import team223.FastRandom;
-import team223.IRobotBehaviour;
+import team223.RobotBehaviour;
 import team223.MapLocationAStar;
 import team223.MyConstants;
 import team223.PathInfo;
@@ -19,10 +19,8 @@ import battlecode.common.RobotController;
 import battlecode.common.RobotType;
 import battlecode.common.TerrainTile;
 
-public class PastureDestroyerBehaviour implements IRobotBehaviour {
+public class PastureDestroyerBehaviour extends RobotBehaviour {
 
-	private State state;
-	
 	private MapLocation[] pastrLocations;
 	private int roundCounter=0;
 
@@ -48,6 +46,7 @@ public class PastureDestroyerBehaviour implements IRobotBehaviour {
 		
 		if ( rc.getHealth() < 50 ) {
 			state = new Fleeing( rnd );
+			if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }			
 			state = state.perform( rc );
 			return;
 		}
@@ -69,6 +68,7 @@ public class PastureDestroyerBehaviour implements IRobotBehaviour {
 				if ( MyConstants.DEBUG_MODE) System.out.println("Pasture destroyer is at "+rc.getLocation()+" and thus reached designated target location "+oldState.getDestination()+" (dist: "+dist+", required: "+
 				RobotType.SOLDIER.attackRadiusMaxSquared);
 				state = new AttackEnemiesInSight();
+				if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
 			}
 			return;			
 		}
@@ -107,6 +107,7 @@ public class PastureDestroyerBehaviour implements IRobotBehaviour {
 							return PastureDestroyerBehaviour.this.hasArrivedAtDestination( current , dstLoc );
 						}
 					};
+					if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
 					break;
 				} 
 			} 

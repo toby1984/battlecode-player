@@ -17,13 +17,15 @@ public final class PathInfo
 		if ( path != null ) 
 		{
 			final int len = path.size();
-			for ( int i = 0 ; i < len ; i++ ) {
-				if ( path.get(i).equals( current ) ) {
+			for ( int i = 0 ; i < len ; i++ ) 
+			{
+				MapLocation loc = path.get(i);
+				if ( loc.equals( current ) ) {
 					if ( (i+1) < len ) {
 						return path.get(i+1);
 					}
-					return null;
-				}
+					return loc;
+				} 
 			}
 		}
 		return null;

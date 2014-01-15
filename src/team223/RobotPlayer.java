@@ -10,7 +10,7 @@ import battlecode.common.RobotType;
 public class RobotPlayer 
 {
 	private static FastRandom random;
-	private static IRobotBehaviour behaviour;
+	private static RobotBehaviour behaviour;
 	
 	public static void run(RobotController rc) 
 	{
@@ -36,7 +36,7 @@ public class RobotPlayer
 		} 
 	}
 	
-	private static IRobotBehaviour chooseRobotBehaviour(RobotController rc) 
+	private static RobotBehaviour chooseRobotBehaviour(RobotController rc) 
 	{
 		RobotType robotType = rc.getType();
 		switch( robotType ) 
@@ -58,7 +58,7 @@ public class RobotPlayer
 				if ( MyConstants.DEBUG_MODE) System.out.println("Robot will be a destroyer");
 				return new DestroyerBehaviour(random);				
 			default:
-				return IRobotBehaviour.NOP_BEHAVIOUR;				
+				return RobotBehaviour.NOP_BEHAVIOUR;				
 		}
 	}
 }

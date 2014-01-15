@@ -1,7 +1,7 @@
 package team223.behaviours;
 
 import team223.FastRandom;
-import team223.IRobotBehaviour;
+import team223.RobotBehaviour;
 import team223.MyConstants;
 import team223.State;
 import team223.Utils;
@@ -16,9 +16,8 @@ import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 
-public class CowboyBehaviour implements IRobotBehaviour {
+public class CowboyBehaviour extends RobotBehaviour {
 
-	private State state;
 	private final FastRandom rnd;
 	
 	private Direction generalDirection;
@@ -43,6 +42,7 @@ public class CowboyBehaviour implements IRobotBehaviour {
 		
 		if ( rc.getHealth() < 50 ) {
 			state = new Fleeing(rnd);
+			if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
 			state = state.perform( rc );
 			return;
 		}
@@ -58,6 +58,7 @@ public class CowboyBehaviour implements IRobotBehaviour {
 		{
 			if ( MyConstants.DEBUG_MODE) System.out.println("Cowbow is attacking "+closestEnemy.getID());
 			state = new Attacking(closestEnemy);
+			if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
 			state = state.perform( rc );
 			return;
 		}		

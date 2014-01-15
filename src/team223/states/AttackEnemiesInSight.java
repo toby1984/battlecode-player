@@ -89,4 +89,9 @@ public class AttackEnemiesInSight extends State {
 		if ( MyConstants.DEBUG_MODE) System.out.println("Next enemy to destroy: "+candidate);
 		return candidate;
 	}
+	
+    @Override
+    public String toString() {
+    	return getClass().getSimpleName();
+    }	
 }
