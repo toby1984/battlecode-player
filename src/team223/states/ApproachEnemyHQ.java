@@ -1,8 +1,13 @@
-package lowflyingcow.states;
+package team223.states;
 
 import java.util.List;
 
-import lowflyingcow.*;
+import team223.FastRandom;
+import team223.MapLocationAStar;
+import team223.MyConstants;
+import team223.PathInfo;
+import team223.State;
+import team223.Utils;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
@@ -34,10 +39,10 @@ public class ApproachEnemyHQ extends State {
 					pathInfo = new PathInfo( path );
 					next = pathInfo.path.get(1);
 				} else {
-					System.err.println("Failed to find location near enemy HQ ?");					
+					if ( MyConstants.DEBUG_MODE ) if ( MyConstants.DEBUG_MODE) System.out.println("ERROR: Failed to find location near enemy HQ ?");					
 				}
 			} else {
-				System.err.println("Failed to find location near enemy HQ ?");
+				if ( MyConstants.DEBUG_MODE ) if ( MyConstants.DEBUG_MODE) System.out.println("Failed to find location near enemy HQ ?");
 			}
 		}
 		if ( next != null )
@@ -70,7 +75,7 @@ public class ApproachEnemyHQ extends State {
     	final MapLocationAStar pathFinder = new MapLocationAStar(startLoc,dstLoc) 
     	{
 			@Override
-			protected boolean isCloseEnoughToTarget(lowflyingcow.AStar.PathNode<MapLocation> node) 
+			protected boolean isCloseEnoughToTarget(team223.AStar.PathNode<MapLocation> node) 
 			{
 				return hasArrivedAtDestination( node.value , destination );
 			}

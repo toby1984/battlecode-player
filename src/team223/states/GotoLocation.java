@@ -1,11 +1,15 @@
-package lowflyingcow.states;
+package team223.states;
 
 import java.util.List;
 
-import lowflyingcow.MyConstants;
-import lowflyingcow.PathInfo;
-import lowflyingcow.State;
-import battlecode.common.*;
+import team223.MyConstants;
+import team223.PathInfo;
+import team223.State;
+import battlecode.common.Direction;
+import battlecode.common.GameActionException;
+import battlecode.common.MapLocation;
+import battlecode.common.MovementType;
+import battlecode.common.RobotController;
 
 public abstract class GotoLocation extends State {
 
@@ -35,7 +39,7 @@ public abstract class GotoLocation extends State {
 		} 
 //		else {
 //			int dst = myLocation.distanceSquaredTo( pathInfo.end() );
-//			System.out.println("distanceSqrt( "+myLocation+" -> "+pathInfo.end()+"): "+dst+" but needed <= "+RobotType.SOLDIER.attackRadiusMaxSquared );
+//			if ( MyConstants.DEBUG_MODE) System.out.println("distanceSqrt( "+myLocation+" -> "+pathInfo.end()+"): "+dst+" but needed <= "+RobotType.SOLDIER.attackRadiusMaxSquared );
 //		}
 		
 		MapLocation next = pathInfo.getStepAfter( myLocation );
@@ -57,15 +61,15 @@ public abstract class GotoLocation extends State {
 			else 
 			{
 				movementFailureCount++;
-				System.out.println("Failed to move "+myLocation+" -> "+next+" (count: "+movementFailureCount+")");
+				if ( MyConstants.DEBUG_MODE) System.out.println("Failed to move "+myLocation+" -> "+next+" (count: "+movementFailureCount+")");
 				if ( movementFailureCount > MyConstants.MAX_PATH_MOVEMENT_FAILURES ) 
 				{
 					// 	movement failed too many times, some new obstacle is blocking us...recalculate path					
-					System.out.println("Re-calculating path "+myLocation+" -> "+next);						
+					if ( MyConstants.DEBUG_MODE) System.out.println("Re-calculating path "+myLocation+" -> "+next);						
 					movementFailureCount = 0;
 					pathInfo = new PathInfo( recalculatePath(rc) );
 					if ( pathInfo.path == null ) {
-						System.out.println("Failed to recalculating path" );						
+						if ( MyConstants.DEBUG_MODE) System.out.println("Failed to recalculating path" );						
 						return null;
 					}
 				}

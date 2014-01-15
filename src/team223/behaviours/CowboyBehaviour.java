@@ -1,9 +1,20 @@
-package lowflyingcow.behaviours;
+package team223.behaviours;
 
-import lowflyingcow.*;
-import lowflyingcow.states.Attacking;
-import lowflyingcow.states.Fleeing;
-import battlecode.common.*;
+import team223.FastRandom;
+import team223.IRobotBehaviour;
+import team223.MyConstants;
+import team223.State;
+import team223.Utils;
+import team223.states.Attacking;
+import team223.states.Fleeing;
+import battlecode.common.Direction;
+import battlecode.common.GameActionException;
+import battlecode.common.GameConstants;
+import battlecode.common.MapLocation;
+import battlecode.common.Robot;
+import battlecode.common.RobotController;
+import battlecode.common.RobotInfo;
+import battlecode.common.RobotType;
 
 public class CowboyBehaviour implements IRobotBehaviour {
 
@@ -45,7 +56,7 @@ public class CowboyBehaviour implements IRobotBehaviour {
 		Robot closestEnemy = Utils.findClosestEnemy( rc , Utils.findEnemies( rc , 5 ) );
 		if ( closestEnemy != null ) 
 		{
-			System.out.println("Cowbow is attacking "+closestEnemy.getID());
+			if ( MyConstants.DEBUG_MODE) System.out.println("Cowbow is attacking "+closestEnemy.getID());
 			state = new Attacking(closestEnemy);
 			state = state.perform( rc );
 			return;
@@ -60,7 +71,7 @@ public class CowboyBehaviour implements IRobotBehaviour {
 		cowCount += rc.senseCowsAtLocation( myLoc );
 		
 //		if ( cowCount > 0 ) {
-//			System.out.println( cowCount+" cows at "+myLoc);
+//			if ( MyConstants.DEBUG_MODE) System.out.println( cowCount+" cows at "+myLoc);
 //		}
 		
 		if ( cowCount > MyConstants.MIN_COWS_FOR_PASTURE ) {
@@ -77,7 +88,7 @@ public class CowboyBehaviour implements IRobotBehaviour {
 			}
 			
 			if ( construct ) {
-				System.out.println("Starting PASTR construction");
+				if ( MyConstants.DEBUG_MODE) System.out.println("Starting PASTR construction");
 				rc.construct( RobotType.PASTR );
 				return;
 			}

@@ -1,6 +1,6 @@
-package lowflyingcow.states;
+package team223.states;
 
-import lowflyingcow.State;
+import team223.State;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;

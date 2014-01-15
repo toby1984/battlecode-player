@@ -1,8 +1,17 @@
-package lowflyingcow.behaviours;
+package team223.behaviours;
 
-import lowflyingcow.*;
-import lowflyingcow.states.Attacking;
-import battlecode.common.*;
+import team223.FastRandom;
+import team223.IRobotBehaviour;
+import team223.MyConstants;
+import team223.State;
+import team223.Utils;
+import team223.states.Attacking;
+import battlecode.common.Direction;
+import battlecode.common.GameActionException;
+import battlecode.common.GameConstants;
+import battlecode.common.Robot;
+import battlecode.common.RobotController;
+import battlecode.common.RobotType;
 
 public class HQBehaviour implements IRobotBehaviour{
 
@@ -32,7 +41,7 @@ public class HQBehaviour implements IRobotBehaviour{
 		if ( enemy != null ) 
 		{
 			state = new Attacking( enemy );
-			System.out.println("HQ is attacking #"+enemy.getID());
+			if ( MyConstants.DEBUG_MODE) System.out.println("HQ is attacking #"+enemy.getID());
 			state.perform( rc );
 			return;
 		}

@@ -1,7 +1,12 @@
-package lowflyingcow.states;
+package team223.states;
 
-import lowflyingcow.State;
-import battlecode.common.*;
+import team223.MyConstants;
+import team223.State;
+import battlecode.common.GameActionException;
+import battlecode.common.Robot;
+import battlecode.common.RobotController;
+import battlecode.common.RobotInfo;
+import battlecode.common.RobotType;
 
 public class AttackEnemiesInSight extends State {
 
@@ -17,7 +22,7 @@ public class AttackEnemiesInSight extends State {
 		if ( enemies == null || roundCount > 0 ) {
 			roundCount = 0;
 			enemies = rc.senseNearbyGameObjects(Robot.class , rc.getLocation() , RobotType.SOLDIER.attackRadiusMaxSquared , rc.getTeam().opponent() );
-			System.out.println("AttackEnemiesInSight - sensed "+enemies.length+" enemies around "+rc.getLocation());
+			if ( MyConstants.DEBUG_MODE) System.out.println("AttackEnemiesInSight - sensed "+enemies.length+" enemies around "+rc.getLocation());
 		}
 
 		if ( currentEnemy == null || ! rc.canSenseObject( currentEnemy ) ) 
@@ -37,7 +42,7 @@ public class AttackEnemiesInSight extends State {
 
 	private Robot pickEnemy(RobotController rc) throws GameActionException 
 	{
-		System.out.println("Picking enemy...");
+		if ( MyConstants.DEBUG_MODE) System.out.println("Picking enemy...");
 		
 		Robot candidate = null;
 		int candidateIndex = -1;
@@ -65,15 +70,15 @@ public class AttackEnemiesInSight extends State {
 								}
 							} 					
 						} else {
-							System.out.println("Discarding robot #"+r.getID()+" that is not of required type (actual: "+type+")");								
+							if ( MyConstants.DEBUG_MODE) System.out.println("Discarding robot #"+r.getID()+" that is not of required type (actual: "+type+")");								
 							enemies[i] = null; // discard , robot not of required type
 						} 
 					} else {
-						System.out.println("Discarding robot #"+r.getID()+" that is not within attack range");						
+						if ( MyConstants.DEBUG_MODE) System.out.println("Discarding robot #"+r.getID()+" that is not within attack range");						
 						enemies[i] = null; // discard , robot dead or not within attack range					
 					}
 				} else {
-					System.out.println("Discarding robot #"+r.getID()+" that cannot be sensed");
+					if ( MyConstants.DEBUG_MODE) System.out.println("Discarding robot #"+r.getID()+" that cannot be sensed");
 					enemies[i]=null; // discard, robot not in sensor range
 				}
 			}
@@ -81,7 +86,7 @@ public class AttackEnemiesInSight extends State {
 		if ( candidate != null ) {
 			enemies[candidateIndex]=null;
 		}
-		System.out.println("Next enemy to destroy: "+candidate);
+		if ( MyConstants.DEBUG_MODE) System.out.println("Next enemy to destroy: "+candidate);
 		return candidate;
 	}
 }

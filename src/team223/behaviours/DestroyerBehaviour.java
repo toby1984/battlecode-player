@@ -1,10 +1,18 @@
-package lowflyingcow.behaviours;
+package team223.behaviours;
 
-import lowflyingcow.*;
-import lowflyingcow.states.ApproachEnemyHQ;
-import lowflyingcow.states.Attacking;
-import lowflyingcow.states.Fleeing;
-import battlecode.common.*;
+import team223.FastRandom;
+import team223.IRobotBehaviour;
+import team223.MyConstants;
+import team223.State;
+import team223.Utils;
+import team223.states.ApproachEnemyHQ;
+import team223.states.Attacking;
+import team223.states.Fleeing;
+import battlecode.common.Direction;
+import battlecode.common.GameActionException;
+import battlecode.common.MapLocation;
+import battlecode.common.Robot;
+import battlecode.common.RobotController;
 
 public class DestroyerBehaviour implements IRobotBehaviour {
 

@@ -1,6 +1,9 @@
-package lowflyingcow;
+package team223;
 
-import lowflyingcow.behaviours.*;
+import team223.behaviours.CowboyBehaviour;
+import team223.behaviours.DestroyerBehaviour;
+import team223.behaviours.HQBehaviour;
+import team223.behaviours.PastureDestroyerBehaviour;
 import battlecode.common.RobotController;
 import battlecode.common.RobotType;
 
@@ -39,20 +42,20 @@ public class RobotPlayer
 		switch( robotType ) 
 		{
 			case HQ:
-				System.out.println("Robot is a HQ");
+				if ( MyConstants.DEBUG_MODE) System.out.println("Robot is a HQ");
 				return new HQBehaviour( random );
 			case SOLDIER:
 				float f = random.nextFloat();
 				if ( f <= 0.2 ) {
-					System.out.println("Robot will be a pasture destroyer");					
+					if ( MyConstants.DEBUG_MODE) System.out.println("Robot will be a pasture destroyer");					
 					return new PastureDestroyerBehaviour( random );
 				}
 				
 				if ( f <= 0.4 ) {
-					System.out.println("Robot will be a cowboy");
+					if ( MyConstants.DEBUG_MODE) System.out.println("Robot will be a cowboy");
 					return new CowboyBehaviour(rc,random);					
 				}
-				System.out.println("Robot will be a destroyer");
+				if ( MyConstants.DEBUG_MODE) System.out.println("Robot will be a destroyer");
 				return new DestroyerBehaviour(random);				
 			default:
 				return IRobotBehaviour.NOP_BEHAVIOUR;				

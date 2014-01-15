@@ -1,9 +1,11 @@
-package lowflyingcow;
+package team223;
 
 import battlecode.common.RobotType;
 
 public interface MyConstants 
 {
+	public static final boolean DEBUG_MODE =false;
+	
 	public static final int SOLDIER_ATTACK_RANGE = (int) Math.ceil( Math.sqrt( RobotType.SOLDIER.attackRadiusMaxSquared ) );
 	
 	public static final int SOLDIER_ATTACK_RANGE_SQUARED = SOLDIER_ATTACK_RANGE*SOLDIER_ATTACK_RANGE;

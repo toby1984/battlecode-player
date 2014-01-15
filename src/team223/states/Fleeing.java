@@ -1,9 +1,14 @@
-package lowflyingcow.states;
+package team223.states;
 
-import lowflyingcow.FastRandom;
-import lowflyingcow.State;
-import lowflyingcow.Utils;
-import battlecode.common.*;
+import team223.FastRandom;
+import team223.MyConstants;
+import team223.State;
+import team223.Utils;
+import battlecode.common.Direction;
+import battlecode.common.GameActionException;
+import battlecode.common.MapLocation;
+import battlecode.common.Robot;
+import battlecode.common.RobotController;
 
 public class Fleeing extends State {
 
@@ -31,7 +36,7 @@ public class Fleeing extends State {
 					{
 						rc.move(d);
 					} else {
-						System.out.println("Nowhere to escape?");
+						if ( MyConstants.DEBUG_MODE) System.out.println("Nowhere to escape?");
 					} 
 					return this;
 				}

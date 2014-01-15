@@ -1,4 +1,4 @@
-package lowflyingcow;
+package team223;
 
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
@@ -11,7 +11,7 @@ public abstract class MapLocationAStar extends AStar<MapLocation> {
 	}
 
 	@Override
-	protected float calcMovementCost(lowflyingcow.AStar.PathNode<MapLocation> current) 
+	protected float calcMovementCost(team223.AStar.PathNode<MapLocation> current) 
 	{
         float cost=0;
         if( current.parent != null ) 
@@ -23,7 +23,7 @@ public abstract class MapLocationAStar extends AStar<MapLocation> {
 	}
 	
 	@Override
-	protected float calcEstimatedCost( lowflyingcow.AStar.PathNode<MapLocation> node) 
+	protected float calcEstimatedCost( team223.AStar.PathNode<MapLocation> node) 
 	{
     	// WEIGHTED A-STAR !!!
     	float dist = (float) Math.sqrt( destination.distanceSquaredTo(  node.value ) );
@@ -35,7 +35,7 @@ public abstract class MapLocationAStar extends AStar<MapLocation> {
 	public abstract boolean isOccupied(MapLocation loc) throws GameActionException;
 	
 	@Override
-	protected void scheduleNeighbors(lowflyingcow.AStar.PathNode<MapLocation> parent) throws GameActionException 
+	protected void scheduleNeighbors(team223.AStar.PathNode<MapLocation> parent) throws GameActionException 
 	{
 		int x = parent.value.x;
 		int y = parent.value.y;

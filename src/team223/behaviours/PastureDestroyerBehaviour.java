@@ -1,12 +1,23 @@
-package lowflyingcow.behaviours;
+package team223.behaviours;
 
 import java.util.List;
 
-import lowflyingcow.*;
-import lowflyingcow.states.AttackEnemiesInSight;
-import lowflyingcow.states.Fleeing;
-import lowflyingcow.states.GotoLocation;
-import battlecode.common.*;
+import team223.FastRandom;
+import team223.IRobotBehaviour;
+import team223.MapLocationAStar;
+import team223.MyConstants;
+import team223.PathInfo;
+import team223.State;
+import team223.Utils;
+import team223.states.AttackEnemiesInSight;
+import team223.states.Fleeing;
+import team223.states.GotoLocation;
+import battlecode.common.GameActionException;
+import battlecode.common.MapLocation;
+import battlecode.common.MovementType;
+import battlecode.common.RobotController;
+import battlecode.common.RobotType;
+import battlecode.common.TerrainTile;
 
 public class PastureDestroyerBehaviour implements IRobotBehaviour {
 
@@ -49,13 +60,13 @@ public class PastureDestroyerBehaviour implements IRobotBehaviour {
 		if ( state instanceof GotoLocation ) 
 		{
 			GotoLocation oldState = (GotoLocation) state;
-			System.out.println("Moving towards "+oldState.getDestination() );
+			if ( MyConstants.DEBUG_MODE) System.out.println("Moving towards "+oldState.getDestination() );
 			state = state.perform(rc);
 			if ( state == null ) 
 			{
 				// destination reached
 				int dist = rc.getLocation().distanceSquaredTo( oldState.getDestination() );
-				System.out.println("Pasture destroyer is at "+rc.getLocation()+" and thus reached designated target location "+oldState.getDestination()+" (dist: "+dist+", required: "+
+				if ( MyConstants.DEBUG_MODE) System.out.println("Pasture destroyer is at "+rc.getLocation()+" and thus reached designated target location "+oldState.getDestination()+" (dist: "+dist+", required: "+
 				RobotType.SOLDIER.attackRadiusMaxSquared);
 				state = new AttackEnemiesInSight();
 			}
@@ -68,21 +79,21 @@ public class PastureDestroyerBehaviour implements IRobotBehaviour {
 			pastrLocations = null;
 			
 			pastrLocations = rc.sensePastrLocations( rc.getTeam().opponent() );
-			System.out.println("Pastures found: "+pastrLocations.length);
+			if ( MyConstants.DEBUG_MODE) System.out.println("Pastures found: "+pastrLocations.length);
 			MapLocation myLocation = rc.getLocation();
 			
 			while(true) 
 			{
 				final MapLocation target = pickTarget();
 				if ( target == null ) {
-					System.out.println("No pastures");
+					if ( MyConstants.DEBUG_MODE) System.out.println("No pastures");
 					return;
 				}
-				System.out.println("Pasture destroyer looking for path to "+target);
+				if ( MyConstants.DEBUG_MODE) System.out.println("Pasture destroyer looking for path to "+target);
 				final List<MapLocation> path = findPath( rc , myLocation , target );
 				if ( path != null ) 
 				{
-					System.out.println("Pasture destroyer found path to "+target);							
+					if ( MyConstants.DEBUG_MODE) System.out.println("Pasture destroyer found path to "+target);							
 					PathInfo pathInfo = new PathInfo(path); 
 					state = new GotoLocation( pathInfo , MovementType.RUN ) {
 

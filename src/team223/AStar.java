@@ -1,6 +1,14 @@
-package lowflyingcow;
+package team223;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Set;
+import java.util.Stack;
 
 import battlecode.common.GameActionException;
 
@@ -145,7 +153,7 @@ public abstract class AStar<T>
     {
     	final PathNode<T> startNode = new PathNode<T>( start );
     	final PathNode<T> endNode = new PathNode<T>( destination );
-		System.out.println("Looking for path from "+startNode.value+" to "+endNode.value);
+		if ( MyConstants.DEBUG_MODE) System.out.println("Looking for path from "+startNode.value+" to "+endNode.value);
 		return findPath( startNode ,endNode );
     }
     
