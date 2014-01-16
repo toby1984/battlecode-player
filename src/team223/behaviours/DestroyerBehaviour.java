@@ -12,7 +12,8 @@ public class DestroyerBehaviour extends RobotBehaviour {
 
 	private final FastRandom random;
 	
-	public DestroyerBehaviour(FastRandom random) {
+	public DestroyerBehaviour(FastRandom random,MapLocation enemyHQLocation) {
+		super(enemyHQLocation);
 		this.random = random;
 	}
 	
@@ -49,7 +50,7 @@ public class DestroyerBehaviour extends RobotBehaviour {
 		Robot closestEnemy = Utils.findClosestEnemy( rc , enemies);
 		if ( closestEnemy != null ) 
 		{
-			state = new Attacking(closestEnemy);
+			state = new Attacking(closestEnemy , enemyHQLocation );
 			if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
 			state = state.perform( rc );
 			return;
@@ -61,7 +62,6 @@ public class DestroyerBehaviour extends RobotBehaviour {
 		}		
 		
 		// home-in on enemy HQ
-		final MapLocation enemyHQLocation = rc.senseEnemyHQLocation();
 		if ( enemyHQLocation.distanceSquaredTo( rc.getLocation() ) > MyConstants.SOLIDER_HOMEIN_ON_HQ_DISTANCE_SQUARED ) 
 		{
 			PathInfo info = new PathInfo( findPathToHQ( rc ) );
@@ -93,7 +93,9 @@ public class DestroyerBehaviour extends RobotBehaviour {
 	private void wander(RobotController rc) throws GameActionException {
 		Direction d = Utils.randomMovementDirection(random,rc);
 		if ( d != Direction.NONE ) {
-			rc.move(d);
+			if ( rc.getLocation().add( d ).distanceSquaredTo( enemyHQLocation ) > RobotType.HQ.attackRadiusMaxSquared ) {
+				rc.move(d);
+			}
 		}
 	}
 	
@@ -105,7 +107,6 @@ public class DestroyerBehaviour extends RobotBehaviour {
 	}
 	
 	protected List<MapLocation> findPathToHQ(RobotController rc) throws GameActionException {
-		final MapLocation enemyHQLocation = rc.senseEnemyHQLocation();			
 		MapLocation dst = Utils.findRandomLocationNear( rc , enemyHQLocation , 
 				MyConstants.ENEMY_HQ_SAFE_DISTANCE ,  
 				MyConstants.ENEMY_HQ_SAFE_DISTANCE*2, random );
@@ -117,7 +118,7 @@ public class DestroyerBehaviour extends RobotBehaviour {
 
     protected List<MapLocation> findPath(final RobotController rc,final MapLocation startLoc,final MapLocation dstLoc) throws GameActionException {
     	
-    	final MapLocationAStar pathFinder = new MapLocationAStar(startLoc,dstLoc) 
+    	final AStar pathFinder = new AStar(startLoc,dstLoc) 
     	{
 			@Override
 			protected boolean isCloseEnoughToTarget(team223.AStar.PathNode<MapLocation> node) 

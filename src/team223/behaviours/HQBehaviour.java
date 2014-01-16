@@ -4,11 +4,12 @@ import team223.*;
 import team223.states.Attacking;
 import battlecode.common.*;
 
-public class HQBehaviour extends RobotBehaviour{
+public class HQBehaviour extends RobotBehaviour {
 
 	private final FastRandom rnd;
 	
-	public HQBehaviour(FastRandom rnd) {
+	public HQBehaviour(FastRandom rnd,MapLocation enemyHQLocation) {
+		super(enemyHQLocation);
 		this.rnd=rnd;
 	}
 	
@@ -29,7 +30,7 @@ public class HQBehaviour extends RobotBehaviour{
 		Robot enemy = Utils.findClosestEnemy( rc , enemies );
 		if ( enemy != null ) 
 		{
-			state = new Attacking( enemy );
+			state = new Attacking( enemy , enemyHQLocation );
 			if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
 			if ( MyConstants.DEBUG_MODE) System.out.println("HQ is attacking #"+enemy.getID());
 			state.perform( rc );

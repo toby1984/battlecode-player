@@ -17,7 +17,8 @@ public class PastureDestroyerBehaviour extends RobotBehaviour {
 
 	private final FastRandom rnd;
 	
-	public PastureDestroyerBehaviour( FastRandom rnd) {
+	public PastureDestroyerBehaviour( FastRandom rnd , MapLocation enemyHQLocation) {
+		super(enemyHQLocation);
 		this.rnd=rnd;
 	}
 	
@@ -166,7 +167,7 @@ public class PastureDestroyerBehaviour extends RobotBehaviour {
 	
 	private List<MapLocation> findPath(final RobotController rc,MapLocation start,final MapLocation end) throws GameActionException 
 	{
-		MapLocationAStar finder = new MapLocationAStar(start,end) {
+		AStar finder = new AStar(start,end) {
 			
 			@Override
 			protected boolean isCloseEnoughToTarget(PathNode<MapLocation> node) 

@@ -12,8 +12,6 @@ import battlecode.common.RobotController;
 
 public class Fleeing extends State {
 
-	private static final int ATTACK_ENEMY_DST_SQUARED = 12;
-	
 	private FastRandom rnd;
 	
 	public Fleeing(FastRandom rnd) {
@@ -25,19 +23,17 @@ public class Fleeing extends State {
 	{
 		if ( rc.getHealth() < 50 ) 
 		{
-			Robot[] enemies = Utils.findEnemies(rc , ATTACK_ENEMY_DST_SQUARED);
-			MapLocation centerOfMass = Utils.getCenterOfMass( rc , enemies );
+			Robot[] enemies = Utils.findEnemies(rc , MyConstants.ENEMY_SAFE_DISTANCE );
+			MapLocation centerOfMass = Utils.getMassCenterOfThreats( rc , enemies );
 			if ( centerOfMass != null ) 
 			{
 				Direction d = rc.getLocation().directionTo( centerOfMass ).opposite();
-				if ( d == Direction.OMNI ) {
+				if ( d == Direction.OMNI ) { // we're at the center of mass, any direction is better than being here
 					d = Utils.randomMovementDirection( rnd , rc );
 					if ( d != Direction.NONE ) 
 					{
 						rc.move(d);
-					} else {
-						if ( MyConstants.DEBUG_MODE) System.out.println("Nowhere to escape?");
-					} 
+					} else if ( MyConstants.DEBUG_MODE) System.out.println("No-where to escape?");
 					return this;
 				}
 				for ( int retries = 7 ; retries > 0 ; retries--) {

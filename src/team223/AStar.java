@@ -1,29 +1,23 @@
 package team223;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
 import battlecode.common.GameActionException;
+import battlecode.common.MapLocation;
+import battlecode.common.TerrainTile;
 
 
-public abstract class AStar<T>
+public abstract class AStar
 {
     // nodes to check
-    private final Map<PathNode<T>,PathNode<T>> openMap = new HashMap<PathNode<T>, PathNode<T>>(2000);
-    private final PriorityQueue<PathNode<T>> openList = new PriorityQueue<PathNode<T>>(2000);
+    private final Map<PathNode<MapLocation>,PathNode<MapLocation>> openMap = new HashMap<PathNode<MapLocation>, PathNode<MapLocation>>(2000);
+    private final PriorityQueue<PathNode<MapLocation>> openList = new PriorityQueue<PathNode<MapLocation>>(2000);
 
     // nodes ruled out
-    private final Set<PathNode<T>> closeList = new HashSet<PathNode<T>>();
+    private final Set<PathNode<MapLocation>> closeList = new HashSet<PathNode<MapLocation>>();
 	
-    protected T start;
-    protected T destination;
+    protected MapLocation start;
+    protected MapLocation destination;
     
     public final static class PathNode<V> implements Comparable<PathNode<V>>
     {
@@ -138,26 +132,26 @@ public abstract class AStar<T>
         }
     }
     
-	private void insert(PathNode<T> node) 
+	private void insert(PathNode<MapLocation> node) 
 	{
         openMap.put(node,node);
         openList.add( node );
 	}    
 	
-	public AStar(T start,T destination) {
+	public AStar(MapLocation start,MapLocation destination) {
 		this.start = start;
 		this.destination = destination;
 	}
 	
-    public PathNode<T> findPath() throws GameActionException 
+    public PathNode<MapLocation> findPath() throws GameActionException 
     {
-    	final PathNode<T> startNode = new PathNode<T>( start );
-    	final PathNode<T> endNode = new PathNode<T>( destination );
+    	final PathNode<MapLocation> startNode = new PathNode<MapLocation>( start );
+    	final PathNode<MapLocation> endNode = new PathNode<MapLocation>( destination );
 		if ( MyConstants.DEBUG_MODE) System.out.println("Looking for path from "+startNode.value+" to "+endNode.value);
 		return findPath( startNode ,endNode );
     }
     
-    private PathNode<T> findPath(PathNode<T> start,PathNode<T> target) throws GameActionException 
+    private PathNode<MapLocation> findPath(PathNode<MapLocation> start,PathNode<MapLocation> target) throws GameActionException 
     {
         if ( start.equals( target ) ) { // trivial case
             return start;
@@ -171,7 +165,7 @@ public abstract class AStar<T>
         
         closeList.add( start );
 
-        PathNode<T> current = start;
+        PathNode<MapLocation> current = start;
         while ( true ) 
         {
         	scheduleNeighbors( current );
@@ -180,7 +174,7 @@ public abstract class AStar<T>
                 return null;
             }
 
-            final PathNode<T> cheapestPath = openList.remove();
+            final PathNode<MapLocation> cheapestPath = openList.remove();
 
             if ( isCloseEnoughToTarget( cheapestPath ) ) 
             {
@@ -194,9 +188,9 @@ public abstract class AStar<T>
         }
     }
     
-    protected abstract boolean isCloseEnoughToTarget( PathNode<T> node ); 
+    protected abstract boolean isCloseEnoughToTarget( PathNode<MapLocation> node ); 
 
-    private void assignCost(PathNode<T> current) 
+    private void assignCost(PathNode<MapLocation> current) 
     {
         final float movementCost = calcMovementCost(current);
         final float estimatedCost = calcEstimatedCost( current );
@@ -204,18 +198,50 @@ public abstract class AStar<T>
         current.g( movementCost );
     }
 
-    protected abstract float calcMovementCost(PathNode<T> current);
+	protected final float calcMovementCost(team223.AStar.PathNode<MapLocation> current) 
+	{
+        float cost=0;
+        if( current.parent != null ) 
+        {
+        	final float dist = (float) Math.sqrt( current.value.distanceSquaredTo( current.parent.value ) );
+        	cost = current.parent.g() + dist;
+        }
+        return cost;
+	}
+	
+	protected final float calcEstimatedCost( team223.AStar.PathNode<MapLocation> node) 
+	{
+    	// WEIGHTED A-STAR !!!
+    	return 4 * (float) Math.sqrt( destination.distanceSquaredTo(  node.value ) );
+	}
 
-    protected abstract float calcEstimatedCost(PathNode<T> node);
-
-    protected abstract void scheduleNeighbors(PathNode<T> parent) throws GameActionException; 
+	protected void scheduleNeighbors(team223.AStar.PathNode<MapLocation> parent) throws GameActionException 
+	{
+		int x = parent.value.x;
+		int y = parent.value.y;
+		for ( int dx = -1 ; dx <= 1 ; dx++ ) 
+		{
+			for ( int dy = -1 ; dy <= 1 ; dy++ ) 
+			{
+				if ( dx != 0 || dy != 0 ) 
+				{
+					final MapLocation newLocation = new MapLocation(x+dx,y+dy);
+					final TerrainTile tile = senseTerrainTile( newLocation );
+					if ( ( tile == TerrainTile.NORMAL || tile == TerrainTile.ROAD ) && ! isOccupied( newLocation ) ) 
+					{ 
+						maybeAddNeighbor( parent , newLocation );
+					}
+				}
+			}
+		}
+	}	
     
-    protected final void maybeAddNeighbor(PathNode<T> parent, T point)
+    protected final void maybeAddNeighbor(PathNode<MapLocation> parent, MapLocation point)
     {
-        final PathNode<T> newNode = new PathNode<T>( point , parent );
+        final PathNode<MapLocation> newNode = new PathNode<MapLocation>( point , parent );
         if ( ! closeList.contains(newNode) ) 
         {
-            final PathNode<T> existing = openMap.get(newNode);
+            final PathNode<MapLocation> existing = openMap.get(newNode);
 
             assignCost( newNode );
 
@@ -224,5 +250,9 @@ public abstract class AStar<T>
                 insert( newNode );
             } 
         }
-    }    
+    }
+    
+	public abstract TerrainTile senseTerrainTile(MapLocation loc);
+
+	public abstract boolean isOccupied(MapLocation loc) throws GameActionException;    
 }

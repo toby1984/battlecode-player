@@ -1,19 +1,16 @@
 package team223.states;
 
 import team223.State;
-import battlecode.common.Direction;
-import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
-import battlecode.common.Robot;
-import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
+import battlecode.common.*;
 
 public class Attacking extends State {
 
 	private final Robot enemy;
+	private final MapLocation enemyHQLocation;
 	
-	public Attacking(Robot enemy) {
+	public Attacking(Robot enemy,MapLocation enemyHQLocation) {
 		this.enemy=enemy;
+		this.enemyHQLocation = enemyHQLocation;
 	}
 	
 	@Override
@@ -24,15 +21,22 @@ public class Attacking extends State {
 		}
 		
 		MapLocation enemyLocation = rc.senseLocationOf( enemy );
-		
 		if ( rc.canAttackSquare( enemyLocation ) ) 
 		{
 			rc.attackSquare( enemyLocation );
-		} else {
+		} 
+		else {
 			// move towards enemy
-			Direction direction = rc.getLocation().directionTo( enemyLocation );
-			if ( rc.canMove( direction ) ) {
-				rc.move( direction );
+			final MapLocation myLocation = rc.getLocation();				
+			Direction direction = myLocation.directionTo( enemyLocation );
+			if ( rc.canMove( direction ) ) 
+			{
+				// make sure not to get in firing range of enemy HQ
+				if ( myLocation.add( direction ).distanceSquaredTo( enemyHQLocation ) > RobotType.HQ.attackRadiusMaxSquared ) {
+					rc.move( direction );
+				} else {
+					return null;
+				}
 			}
 		}
 		return this;

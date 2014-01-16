@@ -1,6 +1,7 @@
 package team223;
 
 import team223.behaviours.*;
+import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 
 public class RobotPlayer 
@@ -34,24 +35,25 @@ public class RobotPlayer
 	
 	private static RobotBehaviour chooseRobotBehaviour(RobotController rc,int robotID) 
 	{
+		MapLocation enemyHQLocation = rc.senseEnemyHQLocation();
 		switch( rc.getType() ) 
 		{
 			case HQ:
 				if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: HQ");
-				return new HQBehaviour( random );
+				return new HQBehaviour( random , enemyHQLocation );
 			case SOLDIER:
-				int kind = rc.getRobot().getID() % 4;
+				int kind = robotID % 4;
 				switch(kind) {
 				case 0:
 				case 1:
 					if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: Cowboy");
-					return new CowboyBehaviour(rc,random);	
+					return new CowboyBehaviour(rc,random, enemyHQLocation );	
 				case 2:
 					if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: Ddestroyer");
-					return new DestroyerBehaviour(random);							
+					return new DestroyerBehaviour(random, enemyHQLocation );							
 				case 3:
 					if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: pasture destroyer");					
-					return new PastureDestroyerBehaviour( random );	
+					return new PastureDestroyerBehaviour( random , enemyHQLocation );	
 				default:
 					throw new RuntimeException("Unhandled kind: "+kind);
 				}

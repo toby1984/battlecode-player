@@ -5,14 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import team223.AStar.PathNode;
-import battlecode.common.Direction;
-import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
-import battlecode.common.Robot;
-import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
-import battlecode.common.RobotType;
-import battlecode.common.TerrainTile;
+import battlecode.common.*;
 
 public class Utils {
 
@@ -25,16 +18,16 @@ public class Utils {
 		Direction.WEST, 
 		Direction.NORTH_WEST};
 	
-	public static MapLocation findRandomLocationNear(RobotController rc,MapLocation loc,int minRadius,int maxRadius,FastRandom rnd) {
+	public static MapLocation findRandomLocationNear(RobotController rc,MapLocation currentLocation,int minRadius,int maxRadius,FastRandom rnd) {
 		
 		final int minSquared = minRadius*minRadius;
 		final int maxSquared = maxRadius*maxRadius;
 		
-		final int minX = Math.max(0, loc.x - maxRadius );
-		final int minY = Math.max(0, loc.y - maxRadius );
+		final int minX = Math.max(0, currentLocation.x - maxRadius );
+		final int minY = Math.max(0, currentLocation.y - maxRadius );
 		
-		final int maxX = Math.min( rc.getMapWidth()  , loc.x + maxRadius );
-		final int maxY = Math.min( rc.getMapHeight() , loc.y + maxRadius );
+		final int maxX = Math.min( rc.getMapWidth()  , currentLocation.x + maxRadius );
+		final int maxY = Math.min( rc.getMapHeight() , currentLocation.y + maxRadius );
 
 		final int dx = maxX - minX;
 		final int dy = maxY - minY;
@@ -43,8 +36,8 @@ public class Utils {
 		{
 			int x = minX+(int) (dx*rnd.nextFloat());
 			int y = minY+(int) (dy*rnd.nextFloat());
-			float distX = x-loc.x;
-			float distY = y-loc.y;
+			float distX = x-currentLocation.x;
+			float distY = y-currentLocation.y;
 			float distSquared = distX*distX+distY*distY;
 			if ( distSquared >= minSquared && distSquared <= maxSquared) 
 			{
@@ -52,6 +45,7 @@ public class Utils {
 				TerrainTile tileType = rc.senseTerrainTile( l );
 				
 				if (  tileType == TerrainTile.NORMAL || tileType == TerrainTile.ROAD ) {
+					
 					return l;
 				}
 			}
@@ -141,7 +135,7 @@ public class Utils {
 		throw new RuntimeException("Unreachable code reached");
 	}
 	
-	public static List<MapLocation> findPath(MapLocationAStar pathFinder) throws GameActionException 
+	public static List<MapLocation> findPath(AStar pathFinder) throws GameActionException 
 	{
 		PathNode<MapLocation> node = pathFinder.findPath();
 		if ( node == null ) {
@@ -182,7 +176,7 @@ public class Utils {
 		return closestRobot;
 	}
 	
-	public static MapLocation getCenterOfMass(RobotController rc,Robot[] enemies) throws GameActionException 
+	public static MapLocation getMassCenterOfThreats(RobotController rc,Robot[] enemies) throws GameActionException 
 	{
 		float mx = 0;
 		float my = 0;
@@ -190,7 +184,7 @@ public class Utils {
 		for ( int i = 0 ; i < enemies.length ; i++ ) 
 		{
 			RobotInfo info = rc.senseRobotInfo( enemies[i] );
-			if ( info.type == RobotType.SOLDIER || info.type == RobotType.HQ ) {
+			if ( info.type == RobotType.SOLDIER || info.type == RobotType.HQ ) { // only soldiers and HQ can harm us
 				mx += info.location.x;
 				my += info.location.y;
 				count++;

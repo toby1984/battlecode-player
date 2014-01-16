@@ -8,7 +8,7 @@ public interface MyConstants
 	
 	public static final int SOLDIER_ATTACK_RANGE = (int) Math.ceil( Math.sqrt( RobotType.SOLDIER.attackRadiusMaxSquared ) );
 	
-	public static final int SOLDIER_ATTACK_RANGE_SQUARED = SOLDIER_ATTACK_RANGE*SOLDIER_ATTACK_RANGE;
+	public static final int SOLDIER_ATTACK_RANGE_SQUARED = RobotType.SOLDIER.attackRadiusMaxSquared;
 	
 	/**
 	 * Distance up to which destroyers will try to hunt-down enemy robots.
@@ -38,5 +38,7 @@ public interface MyConstants
 	 * Number of successive movement failures before re-calculating path
 	 * to target. 
 	 */
-	public static final int MAX_PATH_MOVEMENT_FAILURES = 4;
+	public static final int MAX_PATH_MOVEMENT_FAILURES = 3;
+
+	public static final int ENEMY_SAFE_DISTANCE = 1 + RobotType.HQ.attackRadiusMaxSquared; // HQ has longest firing range
 }

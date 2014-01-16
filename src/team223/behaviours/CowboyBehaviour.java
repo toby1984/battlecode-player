@@ -9,10 +9,11 @@ public class CowboyBehaviour extends RobotBehaviour {
 
 	private final FastRandom rnd;
 	
-	private int movementFailures=0;
+	private int roundCount=0;
 	private Direction generalDirection;
 	
-	public CowboyBehaviour(RobotController rc,FastRandom rnd) {
+	public CowboyBehaviour(RobotController rc,FastRandom rnd,MapLocation enemyHQLocation) {
+		super(enemyHQLocation);
 		this.rnd=rnd;
 		final Direction[] candidates = Utils.getMovementCandidateDirections( rc );
 		generalDirection = candidates[ rnd.nextInt( candidates.length ) ];
@@ -21,6 +22,8 @@ public class CowboyBehaviour extends RobotBehaviour {
 	@Override
 	public void perform(RobotController rc) throws GameActionException 
 	{
+		roundCount++;
+		
 		if ( ! rc.isActive() || rc.getType() == RobotType.PASTR ) {
 			return;
 		}
@@ -47,7 +50,7 @@ public class CowboyBehaviour extends RobotBehaviour {
 		if ( closestEnemy != null ) 
 		{
 			if ( MyConstants.DEBUG_MODE) System.out.println("Cowbow is attacking "+closestEnemy.getID());
-			state = new Attacking(closestEnemy);
+			state = new Attacking(closestEnemy , enemyHQLocation );
 			if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
 			state = state.perform( rc );
 			return;
@@ -83,20 +86,39 @@ public class CowboyBehaviour extends RobotBehaviour {
 		
 		// wander in general direction
 		Direction d = generalDirection;
-		if ( ! rc.canMove( generalDirection ) ) {
-			d = Utils.randomMovementDirection(rnd,rc);
-		} else {
-			movementFailures++;
+		Direction toMove = null;
+		if ( ( roundCount % 10 ) == 0 ) {
+			Direction newD = Utils.randomMovementDirection(rnd,rc);
+			if ( newD != Direction.NONE ) {
+				generalDirection = newD;
+				d=newD;
+			}
 		}
 		
-		if ( d != Direction.NONE ) {
-			if ( movementFailures > 9 ) {
-				generalDirection=d;
+		if ( ! rc.canMove( d ) ) 
+		{
+			d = generalDirection.rotateLeft();
+			if ( ! rc.canMove( d ) ) {
+				d = generalDirection.rotateRight();
+				if ( ! rc.canMove( d ) ) {
+					d = Utils.randomMovementDirection(rnd,rc);	
+					if ( d != Direction.NONE ) {
+						toMove=d;
+						generalDirection=d;
+					}
+				} else {
+					toMove = d;
+				}
+			} else {
+				toMove = d;
 			}
-			rc.sneak(d);
-			movementFailures=0;
 		} else {
-			movementFailures++;
+			toMove = d;
+		}
+		
+		if ( toMove != null ) 
+		{
+			rc.sneak(d);
 		}
 	}
 
