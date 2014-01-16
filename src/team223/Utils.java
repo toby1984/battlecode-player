@@ -1,8 +1,6 @@
 package team223;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import team223.AStar.PathNode;
 import battlecode.common.*;
@@ -153,6 +151,36 @@ public class Utils {
 	
 	public static final Robot[] findEnemies(RobotController rc,int distanceSquared) {
 		return rc.senseNearbyGameObjects(Robot.class,distanceSquared,rc.getTeam().opponent());			
+	}
+	
+	public static List<RobotInfo> sortAttackTargetsByDistance(RobotController rc,final MapLocation myLocation , Robot[] nearbyEnemies) throws GameActionException 
+	{
+		List<RobotInfo> list = new ArrayList<RobotInfo>();
+		for ( Robot r : nearbyEnemies ) {
+			RobotInfo info = rc.senseRobotInfo( r );
+			if ( info.type == RobotType.SOLDIER || info.type == RobotType.PASTR ) {
+				list.add( info );
+			}
+		}
+		
+		Collections.sort( list , new Comparator<RobotInfo>() {
+
+			@Override
+			public int compare(RobotInfo o1, RobotInfo o2) 
+			{
+				int dist1 = myLocation.distanceSquaredTo( o1.location );
+				int dist2 = myLocation.distanceSquaredTo( o2.location );
+				if ( dist1 < dist2 ) {
+					return -1; 
+				} 
+				if ( dist1 > dist2 ) {
+					return 1;
+				}
+				return 0;
+			}
+			
+		} );
+		return list;
 	}
 	
 	public static final Robot findClosestEnemy(RobotController rc,Robot[] nearbyEnemies) throws GameActionException 

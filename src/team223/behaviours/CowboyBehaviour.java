@@ -1,6 +1,9 @@
 package team223.behaviours;
 
+import java.util.List;
+
 import team223.*;
+import team223.states.AttackEnemiesInSight;
 import team223.states.Attacking;
 import team223.states.Fleeing;
 import battlecode.common.*;
@@ -40,21 +43,24 @@ public class CowboyBehaviour extends RobotBehaviour {
 			return;
 		}
 
-		if ( state instanceof Attacking ) 
+		if ( state instanceof AttackEnemiesInSight ) 
 		{
 			state = state.perform( rc );
 			return;
 		}
 
-		Robot closestEnemy = Utils.findClosestEnemy( rc , Utils.findEnemies( rc , 5 ) );
-		if ( closestEnemy != null ) 
+		Robot[] enemies = Utils.findEnemies( rc , RobotType.SOLDIER.attackRadiusMaxSquared );
+		if ( enemies.length > 0 ) 
 		{
-			if ( MyConstants.DEBUG_MODE) System.out.println("Cowbow is attacking "+closestEnemy.getID());
-			state = new Attacking(closestEnemy , enemyHQLocation );
-			if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
-			state = state.perform( rc );
-			return;
-		}		
+			for ( int i = 0 ; i < enemies.length ; i++ ) {
+				RobotInfo ri = rc.senseRobotInfo( enemies[i] );
+				if ( ri.type == RobotType.PASTR || ri.type == RobotType.SOLDIER ) {
+					state = new AttackEnemiesInSight();
+					if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }					
+					return;
+				}
+			}
+		}
 		
 		// count sheeps,eh,cows
 		double cowCount = 0;
