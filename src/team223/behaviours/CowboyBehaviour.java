@@ -41,7 +41,7 @@ public class CowboyBehaviour extends RobotBehaviour {
 
 	private static final int PASTR_RANGE_SQUARED = GameConstants.PASTR_RANGE;
 
-	private static final int MAX_CANDIDATE_LOCATIONS = 50;
+	private static final int MAX_CANDIDATE_LOCATIONS = 25;
 
 	private static final int PASTR_RANGE  = (int) Math.floor( Math.sqrt( PASTR_RANGE_SQUARED ) );
 
@@ -147,7 +147,7 @@ public class CowboyBehaviour extends RobotBehaviour {
 			return;
 		}
 
-		if ( rc.getHealth() < 50 ) {
+		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) {
 			state = new Fleeing(rnd);
 			if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
 			state = state.perform( rc );

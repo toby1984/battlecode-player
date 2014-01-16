@@ -30,12 +30,16 @@ public class DestroyerBehaviour extends RobotBehaviour {
 		} 
 		
 		Robot[] enemies=null;
-		if ( rc.getHealth() < 50 ) 
+		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) 
 		{
-			state = new Fleeing( random );
-			if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
-			state = state.perform( rc );
-			return;
+			enemies = Utils.findEnemies( rc , RobotType.SOLDIER.attackRadiusMaxSquared );
+			if ( Utils.getEstimatedHealOfThreats( rc , enemies ) >= rc.getHealth() ) 
+			{ 
+				state = new Fleeing( random );
+				if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
+				state = state.perform( rc );
+				return;
+			}
 		}
 		
 		if ( state instanceof Attacking ) {

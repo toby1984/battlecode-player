@@ -21,7 +21,7 @@ public class Fleeing extends State {
 	@Override
 	public State perform(RobotController rc) throws GameActionException 
 	{
-		if ( rc.getHealth() < 50 ) 
+		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) 
 		{
 			Robot[] enemies = Utils.findEnemies(rc , MyConstants.ENEMY_SAFE_DISTANCE );
 			MapLocation centerOfMass = Utils.getMassCenterOfThreats( rc , enemies );

@@ -36,7 +36,7 @@ public class PastureDestroyerBehaviour extends RobotBehaviour {
 			return;
 		} 
 		
-		if ( rc.getHealth() < 50 ) {
+		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) {
 			state = new Fleeing( rnd );
 			if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }			
 			state = state.perform( rc );

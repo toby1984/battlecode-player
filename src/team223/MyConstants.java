@@ -10,6 +10,8 @@ public interface MyConstants
 	
 	public static final int SOLDIER_ATTACK_RANGE_SQUARED = RobotType.SOLDIER.attackRadiusMaxSquared;
 	
+	public static final int FLEE_HEALTH = 40;
+	
 	/**
 	 * Distance up to which destroyers will try to hunt-down enemy robots.
 	 */

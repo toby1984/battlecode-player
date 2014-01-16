@@ -235,6 +235,21 @@ public class Utils {
 		return new MapLocation( (int) Math.round( mx/count) , (int) Math.round( my / count) );		
 	}
 	
+	public static int getEstimatedHealOfThreats(RobotController rc,Robot[] enemies) throws GameActionException 
+	{
+		int result =0;
+		int opponentCount=0;
+		for ( int i = 0 ; i < enemies.length ; i++ ) 
+		{
+			RobotInfo info = rc.senseRobotInfo( enemies[i] );
+			if ( info.type == RobotType.SOLDIER || info.type == RobotType.HQ ) { // only soldiers and HQ can harm us
+				result += info.health;
+				opponentCount++;
+			}
+		}
+		return result*opponentCount;
+	}	
+	
 	public static boolean isThreat(RobotInfo info) throws GameActionException 
 	{
 		return info.type == RobotType.SOLDIER || info.type == RobotType.HQ;
