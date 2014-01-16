@@ -85,6 +85,6 @@ public abstract class GotoLocation extends State {
 	
     @Override
     public String toString() {
-    	return getClass().getSimpleName();
+    	return getClass().getName();
     }	
 }

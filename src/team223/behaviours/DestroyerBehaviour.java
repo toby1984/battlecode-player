@@ -2,22 +2,11 @@ package team223.behaviours;
 
 import java.util.List;
 
-import team223.FastRandom;
-import team223.MapLocationAStar;
-import team223.MyConstants;
-import team223.PathInfo;
-import team223.RobotBehaviour;
-import team223.Utils;
+import team223.*;
 import team223.states.Attacking;
 import team223.states.Fleeing;
 import team223.states.GotoLocation;
-import battlecode.common.Direction;
-import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
-import battlecode.common.MovementType;
-import battlecode.common.Robot;
-import battlecode.common.RobotController;
-import battlecode.common.TerrainTile;
+import battlecode.common.*;
 
 public class DestroyerBehaviour extends RobotBehaviour {
 
@@ -42,24 +31,10 @@ public class DestroyerBehaviour extends RobotBehaviour {
 		Robot[] enemies=null;
 		if ( rc.getHealth() < 50 ) 
 		{
-//			enemies = Utils.findEnemies(rc , MyConstants.SOLDIER_SEEK_ENEMY_RANGE_SQUARED);
-//			
-//			// gauge threats
-//			double enemyHealth = 0;
-//			for ( Robot r : enemies ) 
-//			{
-//				RobotInfo ri = rc.senseRobotInfo( r ); 
-//				if ( Utils.isThreat( ri ) ) {
-//					enemyHealth += ri.health;
-//				}
-//			}
-//			
-//			if ( enemyHealth > rc.getHealth() ) {
-				state = new Fleeing( random );
-				if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
-				state = state.perform( rc );
-				return;
-//			}
+			state = new Fleeing( random );
+			if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
+			state = state.perform( rc );
+			return;
 		}
 		
 		if ( state instanceof Attacking ) {

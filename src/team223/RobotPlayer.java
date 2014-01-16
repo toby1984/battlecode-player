@@ -1,11 +1,7 @@
 package team223;
 
-import team223.behaviours.CowboyBehaviour;
-import team223.behaviours.DestroyerBehaviour;
-import team223.behaviours.HQBehaviour;
-import team223.behaviours.PastureDestroyerBehaviour;
+import team223.behaviours.*;
 import battlecode.common.RobotController;
-import battlecode.common.RobotType;
 
 public class RobotPlayer 
 {
@@ -24,7 +20,7 @@ public class RobotPlayer
 					random = new FastRandom( (long) (31+31*id.intValue()) );
 				}
 				if ( behaviour == null ) {
-					behaviour = chooseRobotBehaviour(rc);
+					behaviour = chooseRobotBehaviour(rc,id);
 					rc.setIndicatorString( 0 , "Type: "+behaviour.getClass().getSimpleName());
 				}
 				behaviour.perform( rc );
@@ -36,27 +32,40 @@ public class RobotPlayer
 		} 
 	}
 	
-	private static RobotBehaviour chooseRobotBehaviour(RobotController rc) 
+	private static RobotBehaviour chooseRobotBehaviour(RobotController rc,int robotID) 
 	{
-		RobotType robotType = rc.getType();
-		switch( robotType ) 
+		switch( rc.getType() ) 
 		{
 			case HQ:
-				if ( MyConstants.DEBUG_MODE) System.out.println("Robot is a HQ");
+				if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: HQ");
 				return new HQBehaviour( random );
 			case SOLDIER:
-				float f = random.nextFloat();
-				if ( f <= 0.2 ) {
-					if ( MyConstants.DEBUG_MODE) System.out.println("Robot will be a pasture destroyer");					
-					return new PastureDestroyerBehaviour( random );
+				int kind = rc.getRobot().getID() % 4;
+				switch(kind) {
+				case 0:
+				case 1:
+					if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: Cowboy");
+					return new CowboyBehaviour(rc,random);	
+				case 2:
+					if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: Ddestroyer");
+					return new DestroyerBehaviour(random);							
+				case 3:
+					if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: pasture destroyer");					
+					return new PastureDestroyerBehaviour( random );	
+				default:
+					throw new RuntimeException("Unhandled kind: "+kind);
 				}
-				
-				if ( f <= 0.4 ) {
-					if ( MyConstants.DEBUG_MODE) System.out.println("Robot will be a cowboy");
-					return new CowboyBehaviour(rc,random);					
-				}
-				if ( MyConstants.DEBUG_MODE) System.out.println("Robot will be a destroyer");
-				return new DestroyerBehaviour(random);				
+//				float f = random.nextFloat();
+//				if ( f <= 0.4 ) {
+//					if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: Cowboy");
+//					return new CowboyBehaviour(rc,random);	
+//				}
+//				if ( f <= 0.6 ) {
+//					if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: pasture destroyer");					
+//					return new PastureDestroyerBehaviour( random );					
+//				}
+//				if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: Ddestroyer");
+//				return new DestroyerBehaviour(random);				
 			default:
 				return RobotBehaviour.NOP_BEHAVIOUR;				
 		}

@@ -1,17 +1,8 @@
 package team223.behaviours;
 
-import team223.FastRandom;
-import team223.RobotBehaviour;
-import team223.MyConstants;
-import team223.State;
-import team223.Utils;
+import team223.*;
 import team223.states.Attacking;
-import battlecode.common.Direction;
-import battlecode.common.GameActionException;
-import battlecode.common.GameConstants;
-import battlecode.common.Robot;
-import battlecode.common.RobotController;
-import battlecode.common.RobotType;
+import battlecode.common.*;
 
 public class HQBehaviour extends RobotBehaviour{
 
@@ -48,13 +39,13 @@ public class HQBehaviour extends RobotBehaviour{
 		if ( rc.senseRobotCount() < GameConstants.MAX_ROBOTS ) 
 		{
 			// spawn robot at random location
-			for ( int retry = 4 ; retry > 0 ; retry-- ) 
+			for ( int retry = 8 ; retry > 0 ; retry-- ) 
 			{
 				Direction direction = Utils.randomDirection(rnd);
 				if ( rc.senseObjectAtLocation( rc.getLocation().add( direction ) ) == null) 
 				{
 					rc.spawn(direction);
-					break;
+					return;
 				}
 			}
 		}		

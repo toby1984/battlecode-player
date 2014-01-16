@@ -1,25 +1,15 @@
 package team223.behaviours;
 
-import team223.FastRandom;
-import team223.RobotBehaviour;
-import team223.MyConstants;
-import team223.State;
-import team223.Utils;
+import team223.*;
 import team223.states.Attacking;
 import team223.states.Fleeing;
-import battlecode.common.Direction;
-import battlecode.common.GameActionException;
-import battlecode.common.GameConstants;
-import battlecode.common.MapLocation;
-import battlecode.common.Robot;
-import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
-import battlecode.common.RobotType;
+import battlecode.common.*;
 
 public class CowboyBehaviour extends RobotBehaviour {
 
 	private final FastRandom rnd;
 	
+	private int movementFailures=0;
 	private Direction generalDirection;
 	
 	public CowboyBehaviour(RobotController rc,FastRandom rnd) {
@@ -71,10 +61,6 @@ public class CowboyBehaviour extends RobotBehaviour {
 		}
 		cowCount += rc.senseCowsAtLocation( myLoc );
 		
-//		if ( cowCount > 0 ) {
-//			if ( MyConstants.DEBUG_MODE) System.out.println( cowCount+" cows at "+myLoc);
-//		}
-		
 		if ( cowCount > MyConstants.MIN_COWS_FOR_PASTURE ) {
 			
 			Robot[] friendlies = rc.senseNearbyGameObjects(Robot.class , GameConstants.PASTR_RANGE*GameConstants.PASTR_RANGE , rc.getTeam() );
@@ -99,10 +85,19 @@ public class CowboyBehaviour extends RobotBehaviour {
 		Direction d = generalDirection;
 		if ( ! rc.canMove( generalDirection ) ) {
 			d = Utils.randomMovementDirection(rnd,rc);
+		} else {
+			movementFailures++;
 		}
+		
 		if ( d != Direction.NONE ) {
+			if ( movementFailures > 9 ) {
+				generalDirection=d;
+			}
 			rc.sneak(d);
-		}		
+			movementFailures=0;
+		} else {
+			movementFailures++;
+		}
 	}
 
 	@Override

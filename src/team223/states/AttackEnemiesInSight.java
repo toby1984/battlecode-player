@@ -2,14 +2,12 @@ package team223.states;
 
 import team223.MyConstants;
 import team223.State;
-import battlecode.common.GameActionException;
-import battlecode.common.Robot;
-import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
-import battlecode.common.RobotType;
+import battlecode.common.*;
 
 public class AttackEnemiesInSight extends State {
 
+	private static final boolean VERBOSE = false;
+	
 	private Robot[] enemies;
 
 	private int roundCount = 0;
@@ -19,20 +17,36 @@ public class AttackEnemiesInSight extends State {
 	public State perform(RobotController rc) throws GameActionException 
 	{
 		roundCount++;
-		if ( enemies == null || roundCount > 0 ) {
+		if ( enemies == null || roundCount > 3 ) {
 			roundCount = 0;
 			enemies = rc.senseNearbyGameObjects(Robot.class , rc.getLocation() , RobotType.SOLDIER.attackRadiusMaxSquared , rc.getTeam().opponent() );
+			if ( VERBOSE ) System.out.println("Sensed "+enemies.length+" enemies in attack range");			
 			if ( MyConstants.DEBUG_MODE) System.out.println("AttackEnemiesInSight - sensed "+enemies.length+" enemies around "+rc.getLocation());
 		}
 
 		if ( currentEnemy == null || ! rc.canSenseObject( currentEnemy ) ) 
 		{
+			if ( VERBOSE ) {
+				if ( currentEnemy == null ) {
+					System.out.println("No current enemy,picking one");
+				} else {
+					System.out.println("Current enemy is no longer in sensor range");					
+				}
+			}
 			currentEnemy = pickEnemy( rc );
 			return currentEnemy != null ? this : null;
 		} 
 
 		RobotInfo ri = rc.senseRobotInfo( currentEnemy );
+		if ( VERBOSE ) System.out.println("Current enemy: "+ri.robot.getID()+" , type: "+ri.type+", health:"+ri.health+", distance= "+rc.getLocation().distanceSquaredTo( ri.location ) );		
 		if ( ri.health <= 0 || ! rc.canAttackSquare( ri.location ) ) {
+			if ( VERBOSE ) {
+				if ( ri.health <= 0  ) {
+					System.out.println("Picking new target [Enemy "+ri.robot.getID()+" has died]");
+				} else {
+					System.out.println("Picking new target [Enemy "+ri.robot.getID()+" is not in attack range]");					
+				}
+			}
 			currentEnemy = pickEnemy( rc );
 			return currentEnemy != null ? this : null;
 		}
@@ -86,7 +100,7 @@ public class AttackEnemiesInSight extends State {
 		if ( candidate != null ) {
 			enemies[candidateIndex]=null;
 		}
-		if ( MyConstants.DEBUG_MODE) System.out.println("Next enemy to destroy: "+candidate);
+		if ( VERBOSE ) System.out.println("Next enemy to destroy: "+candidate);
 		return candidate;
 	}
 	
