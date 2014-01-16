@@ -1,16 +1,20 @@
 package team223;
 
 import team223.behaviours.*;
-import battlecode.common.MapLocation;
-import battlecode.common.RobotController;
+import battlecode.common.*;
 
 public class RobotPlayer 
 {
 	private static FastRandom random;
 	private static RobotBehaviour behaviour;
+	private static Direction awayFromHQ;	
 	
 	public static void run(RobotController rc) 
 	{
+		int invocationCount = 0;
+		MapLocation myHQ =null;
+		
+		int stepsToBackOff=0;
 		while(true) 
 		{
 			try 
@@ -19,12 +23,31 @@ public class RobotPlayer
 				if ( random == null ) 
 				{
 					random = new FastRandom( (long) (31+31*id.intValue()) );
-				}
-				if ( behaviour == null ) {
 					behaviour = chooseRobotBehaviour(rc,id);
 					rc.setIndicatorString( 0 , "Type: "+behaviour.getClass().getSimpleName());
+					stepsToBackOff = 3 + random.nextInt( 3 );
+					myHQ = rc.senseHQLocation();
 				}
-				behaviour.perform( rc );
+				invocationCount++;
+				if ( invocationCount > stepsToBackOff || rc.getType() != RobotType.SOLDIER ) {
+					behaviour.perform( rc );
+				} 
+				else 
+				{
+					MapLocation myLocation = rc.getLocation();
+					Direction opposite = myLocation.directionTo( myHQ ).opposite();
+					Direction m = null;
+					if ( rc.canMove( opposite ) ) {
+						 m = opposite;
+					} else if ( rc.canMove( opposite.rotateLeft() ) ) {
+						 m = opposite.rotateLeft();
+					} else if ( rc.canMove( opposite.rotateRight() ) ) {
+						m = opposite.rotateRight();
+					}
+					if ( m != null ) {
+						rc.sneak(m);
+					}
+				}
 			} 
 			catch (Exception e) {
 				e.printStackTrace();
