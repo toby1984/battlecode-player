@@ -26,8 +26,30 @@ public class RobotPlayer
 					myHQ = rc.senseHQLocation();
 				}
 				
-				if ( behaviour == null ) {
-					behaviour = chooseRobotBehaviour(rc,id);
+				if ( behaviour == null ) 
+				{
+					if ( rc.getType() == RobotType.HQ ) {
+						behaviour = new HQBehaviour( random , rc.senseEnemyHQLocation() );
+					} 
+					else if ( rc.getType() != RobotType.PASTR ) 
+					{
+						int data = rc.readBroadcast( HQBehaviour.HQ_BROADCAST_CHANNEL );
+						switch( data ) {
+							case HQBehaviour.SPAWN_DESTROYER:
+								behaviour = new DestroyerBehaviour( random , rc.senseEnemyHQLocation() );										
+								break;
+							case HQBehaviour.SPAWN_COWBOY:
+								behaviour = new CowboyBehaviour( rc , random , rc.senseEnemyHQLocation() );								
+								break;
+							case HQBehaviour.SPAWN_PASTURE_DESTROYER:
+								behaviour = new PastureDestroyerBehaviour( random , rc.senseEnemyHQLocation() );
+								break;
+							default:
+								throw new RuntimeException("Failed to read broadcast from HQ ?");
+						}
+					}
+					rc.yield();
+					continue;
 				}
 				
 				if ( invocationCount > stepsToBackOff || rc.getType() != RobotType.SOLDIER ) 
@@ -36,6 +58,7 @@ public class RobotPlayer
 				} 
 				else 
 				{
+					// clear spawn area
 					invocationCount++;					
 					MapLocation myLocation = rc.getLocation();
 					Direction opposite = myLocation.directionTo( myHQ ).opposite();
@@ -57,34 +80,5 @@ public class RobotPlayer
 			}
 			rc.yield();
 		} 
-	}
-	
-	private static RobotBehaviour chooseRobotBehaviour(RobotController rc,int robotID) 
-	{
-		MapLocation enemyHQLocation = rc.senseEnemyHQLocation();
-		switch( rc.getType() ) 
-		{
-			case HQ:
-				if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: HQ");
-				return new HQBehaviour( random , enemyHQLocation );
-			case SOLDIER:
-				int kind = robotID % 4;
-				switch(kind) {
-				case 0:
-				case 1:
-					if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: Cowboy");
-					return new CowboyBehaviour(rc,random, enemyHQLocation );	
-				case 2:
-					if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: Ddestroyer");
-					return new DestroyerBehaviour(random, enemyHQLocation );							
-				case 3:
-					if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: pasture destroyer");					
-					return new PastureDestroyerBehaviour( random , enemyHQLocation );	
-				default:
-					throw new RuntimeException("Unhandled kind: "+kind);
-				}
-			default:
-				return RobotBehaviour.NOP_BEHAVIOUR;				
-		}
-	}
+	}	
 }

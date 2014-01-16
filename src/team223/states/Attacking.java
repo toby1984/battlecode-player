@@ -8,6 +8,8 @@ public class Attacking extends State {
 	private final Robot enemy;
 	private final MapLocation enemyHQLocation;
 	
+	private int movementFailures = 0;
+	
 	public Attacking(Robot enemy,MapLocation enemyHQLocation) {
 		this.enemy=enemy;
 		this.enemyHQLocation = enemyHQLocation;
@@ -37,6 +39,11 @@ public class Attacking extends State {
 				} else {
 					return null;
 				}
+			} else {
+				movementFailures++;
+				if ( movementFailures > 5 ) {
+					return null;
+				}
 			}
 		}
 		return this;
@@ -50,6 +57,6 @@ public class Attacking extends State {
 	
     @Override
     public String toString() {
-    	return getClass().getSimpleName();
+    	return getClass().getSimpleName()+" ("+enemy+")";
     }	
 }

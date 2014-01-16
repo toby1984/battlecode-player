@@ -8,6 +8,18 @@ public class HQBehaviour extends RobotBehaviour {
 
 	private final FastRandom rnd;
 	
+	private static final boolean VERBOSE = MyConstants.DEBUG_MODE;
+	
+	public static final int SPAWN_DESTROYER = 1;
+	public static final int SPAWN_COWBOY = 2;
+	public static final int SPAWN_PASTURE_DESTROYER  = 3;
+	
+	public static final int HQ_BROADCAST_CHANNEL = 42;
+	
+	private static int destroyerCount=0;
+	private static int pastureDestroyerCount=0;
+	private static int cowboyCount=0;
+	
 	public HQBehaviour(FastRandom rnd,MapLocation enemyHQLocation) {
 		super(enemyHQLocation);
 		this.rnd=rnd;
@@ -40,18 +52,41 @@ public class HQBehaviour extends RobotBehaviour {
 		if ( rc.senseRobotCount() < GameConstants.MAX_ROBOTS ) 
 		{
 			// spawn robot at random location
-			for ( int retry = 8 ; retry > 0 ; retry-- ) 
+			for ( int retry = 4 ; retry > 0 ; retry-- ) 
 			{
 				Direction direction = Utils.randomDirection(rnd);
 				MapLocation loc = rc.getLocation().add( direction );
 				TerrainTile tileType = rc.senseTerrainTile( loc );
 				if ( ( tileType == TerrainTile.NORMAL || tileType == TerrainTile.ROAD)  && rc.senseObjectAtLocation( loc ) == null) 
 				{
+					int spawnType;
+					if ( destroyerCount == 0 ) {
+						spawnType = SPAWN_DESTROYER;	
+						if ( VERBOSE ) System.out.println("Creating destroyer ( destroyers: "+destroyerCount+" / cowbows: "+cowboyCount+" / pastr destroyer: "+pastureDestroyerCount+")");
+						destroyerCount++;
+					} else {
+						final int expectedCowboyCount = (int) Math.ceil( destroyerCount*0.7f );
+						final int expectedPastureDestroyerCount = (int) Math.ceil( expectedCowboyCount*0.5f );			
+						
+						if ( cowboyCount < expectedCowboyCount ) {
+							spawnType = SPAWN_COWBOY;
+							if ( VERBOSE ) System.out.println("Creating cowboy ( destroyers: "+destroyerCount+" / cowbows: "+cowboyCount+" / pastr destroyer: "+pastureDestroyerCount+")");							
+							cowboyCount++;							
+						} else if ( pastureDestroyerCount < expectedPastureDestroyerCount ) {
+							spawnType = SPAWN_PASTURE_DESTROYER;
+							if ( VERBOSE ) System.out.println("Creating pasture destroyer ( destroyers: "+destroyerCount+" / cowbows: "+cowboyCount+" / pastr destroyer: "+pastureDestroyerCount+")");
+							pastureDestroyerCount++;							
+						} else {
+							spawnType = SPAWN_DESTROYER;
+							if ( VERBOSE ) System.out.println("Creating destroyer ( destroyers: "+destroyerCount+" / cowbows: "+cowboyCount+" / pastr destroyer: "+pastureDestroyerCount+")");
+							destroyerCount++;
+						}
+					}
+					rc.broadcast( HQ_BROADCAST_CHANNEL , spawnType );
 					rc.spawn(direction);
-					return;
+					break;
 				}
 			}
 		}		
 	}
-
 }

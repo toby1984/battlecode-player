@@ -23,12 +23,24 @@ public abstract class RobotBehaviour {
 	
 	public abstract void perform(RobotController rc) throws GameActionException;
 	
-	public final void changedBehaviour(RobotController rc) {
+	public final void changedBehaviour(RobotController rc,String message) 
+	{
+		String text;
 		if ( state == null ) {
-			System.out.println("(*) State change: <NONE>");
+			text = "(*) State change: <NONE> ("+message+")";
 		} else {
-			System.out.println("(*) State change: "+state);
+			text = "(*) State change: "+state+" ("+message+")";
 		}
-		rc.setIndicatorString(1 , state.toString() );
+		rc.setIndicatorString(1 , text );		
+	}
+	
+	public final void changedBehaviour(RobotController rc) {
+		String text;		
+		if ( state == null ) {
+			text = "(*) State change: <NONE>";
+		} else {
+			text = "(*) State change: "+state;
+		}
+		rc.setIndicatorString(1 , text );
 	}
 }

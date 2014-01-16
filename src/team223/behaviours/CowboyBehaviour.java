@@ -85,6 +85,10 @@ public class CowboyBehaviour extends RobotBehaviour {
 		}
 		
 		// wander in general direction
+		if ( MyConstants.DEBUG_MODE ) {
+			changedBehaviour( rc , "Wandering cowbows");
+		}
+		
 		Direction d = generalDirection;
 		Direction toMove = null;
 		if ( ( roundCount % 10 ) == 0 ) {
