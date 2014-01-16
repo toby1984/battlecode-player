@@ -5,9 +5,8 @@ import battlecode.common.*;
 
 public class RobotPlayer 
 {
-	private static FastRandom random;
-	private static RobotBehaviour behaviour;
-	private static Direction awayFromHQ;	
+	private static volatile FastRandom random;
+	private static volatile RobotBehaviour behaviour;
 	
 	public static void run(RobotController rc) 
 	{
@@ -23,17 +22,21 @@ public class RobotPlayer
 				if ( random == null ) 
 				{
 					random = new FastRandom( (long) (31+31*id.intValue()) );
-					behaviour = chooseRobotBehaviour(rc,id);
-					rc.setIndicatorString( 0 , "Type: "+behaviour.getClass().getSimpleName());
-					stepsToBackOff = 3 + random.nextInt( 3 );
+					stepsToBackOff = 5 + random.nextInt( 5 );
 					myHQ = rc.senseHQLocation();
 				}
-				invocationCount++;
-				if ( invocationCount > stepsToBackOff || rc.getType() != RobotType.SOLDIER ) {
+				
+				if ( behaviour == null ) {
+					behaviour = chooseRobotBehaviour(rc,id);
+				}
+				
+				if ( invocationCount > stepsToBackOff || rc.getType() != RobotType.SOLDIER ) 
+				{
 					behaviour.perform( rc );
 				} 
 				else 
 				{
+					invocationCount++;					
 					MapLocation myLocation = rc.getLocation();
 					Direction opposite = myLocation.directionTo( myHQ ).opposite();
 					Direction m = null;
@@ -44,7 +47,7 @@ public class RobotPlayer
 					} else if ( rc.canMove( opposite.rotateRight() ) ) {
 						m = opposite.rotateRight();
 					}
-					if ( m != null ) {
+					if ( m != null && rc.isActive() ) {
 						rc.sneak(m);
 					}
 				}
@@ -80,17 +83,6 @@ public class RobotPlayer
 				default:
 					throw new RuntimeException("Unhandled kind: "+kind);
 				}
-//				float f = random.nextFloat();
-//				if ( f <= 0.4 ) {
-//					if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: Cowboy");
-//					return new CowboyBehaviour(rc,random);	
-//				}
-//				if ( f <= 0.6 ) {
-//					if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: pasture destroyer");					
-//					return new PastureDestroyerBehaviour( random );					
-//				}
-//				if ( MyConstants.DEBUG_MODE) System.out.println("SPAWNED: Ddestroyer");
-//				return new DestroyerBehaviour(random);				
 			default:
 				return RobotBehaviour.NOP_BEHAVIOUR;				
 		}

@@ -84,8 +84,8 @@ public class Utils {
 	{
 		MapLocation location = rc.getLocation();
 		
-		int wThird = rc.getMapWidth() / 3;
-		int hThird = rc.getMapHeight() / 3;
+		int wThird = (int) Math.ceil( rc.getMapWidth() / 3.0f );
+		int hThird = (int) Math.ceil( rc.getMapHeight() / 3.0f );
 		
 		int locX = location.x / wThird;
 		int locY = location.y / hThird;
@@ -132,7 +132,7 @@ public class Utils {
 				}				
 				break;
 		}
-		throw new RuntimeException("Unreachable code reached");
+		throw new RuntimeException("Unreachable code reached, map size: "+rc.getMapWidth()+"x"+rc.getMapHeight()+" , location: "+location+" , x: "+locX+" , y: "+locY);
 	}
 	
 	public static List<MapLocation> findPath(AStar pathFinder) throws GameActionException 

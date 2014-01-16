@@ -43,7 +43,9 @@ public class HQBehaviour extends RobotBehaviour {
 			for ( int retry = 8 ; retry > 0 ; retry-- ) 
 			{
 				Direction direction = Utils.randomDirection(rnd);
-				if ( rc.senseObjectAtLocation( rc.getLocation().add( direction ) ) == null) 
+				MapLocation loc = rc.getLocation().add( direction );
+				TerrainTile tileType = rc.senseTerrainTile( loc );
+				if ( ( tileType == TerrainTile.NORMAL || tileType == TerrainTile.ROAD)  && rc.senseObjectAtLocation( loc ) == null) 
 				{
 					rc.spawn(direction);
 					return;
