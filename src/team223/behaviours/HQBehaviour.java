@@ -65,17 +65,17 @@ public class HQBehaviour extends RobotBehaviour {
 						if ( VERBOSE ) System.out.println("Creating destroyer ( destroyers: "+destroyerCount+" / cowbows: "+cowboyCount+" / pastr destroyer: "+pastureDestroyerCount+")");
 						destroyerCount++;
 					} else {
-						final int expectedCowboyCount = (int) Math.ceil( destroyerCount*0.7f );
-						final int expectedPastureDestroyerCount = (int) Math.ceil( expectedCowboyCount*0.5f );			
+						final int expectedCowboyCount = (int) Math.ceil( destroyerCount*0.8f );
+						final int expectedPastureDestroyerCount = (int) Math.ceil( destroyerCount*0.4f );			
 						
 						if ( cowboyCount < expectedCowboyCount ) {
 							spawnType = SPAWN_COWBOY;
 							if ( VERBOSE ) System.out.println("Creating cowboy ( destroyers: "+destroyerCount+" / cowbows: "+cowboyCount+" / pastr destroyer: "+pastureDestroyerCount+")");							
-							cowboyCount++;							
+							cowboyCount++;	
 						} else if ( pastureDestroyerCount < expectedPastureDestroyerCount ) {
 							spawnType = SPAWN_PASTURE_DESTROYER;
 							if ( VERBOSE ) System.out.println("Creating pasture destroyer ( destroyers: "+destroyerCount+" / cowbows: "+cowboyCount+" / pastr destroyer: "+pastureDestroyerCount+")");
-							pastureDestroyerCount++;							
+							pastureDestroyerCount++;
 						} else {
 							spawnType = SPAWN_DESTROYER;
 							if ( VERBOSE ) System.out.println("Creating destroyer ( destroyers: "+destroyerCount+" / cowbows: "+cowboyCount+" / pastr destroyer: "+pastureDestroyerCount+")");

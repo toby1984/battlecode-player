@@ -12,6 +12,7 @@ public class RobotPlayer
 	{
 		int invocationCount = 0;
 		MapLocation myHQ =null;
+		Team myTeam=null;
 		
 		int stepsToBackOff=0;
 		while(true) 
@@ -21,6 +22,7 @@ public class RobotPlayer
 				final Integer id = rc.getRobot().getID(); 
 				if ( random == null ) 
 				{
+					myTeam = rc.getTeam();
 					random = new FastRandom( (long) (31+31*id.intValue()) );
 					stepsToBackOff = 5 + random.nextInt( 5 );
 					myHQ = rc.senseHQLocation();
@@ -39,7 +41,7 @@ public class RobotPlayer
 								behaviour = new DestroyerBehaviour( random , rc.senseEnemyHQLocation() );										
 								break;
 							case HQBehaviour.SPAWN_COWBOY:
-								behaviour = new CowboyBehaviour( rc , random , rc.senseEnemyHQLocation() );								
+								behaviour = new CowboyBehaviour( rc , myTeam , random , rc.senseEnemyHQLocation() );								
 								break;
 							case HQBehaviour.SPAWN_PASTURE_DESTROYER:
 								behaviour = new PastureDestroyerBehaviour( random , rc.senseEnemyHQLocation() );

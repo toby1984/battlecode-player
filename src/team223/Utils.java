@@ -76,9 +76,20 @@ public class Utils {
 			d = d.rotateLeft();
 		}
 		return Direction.NONE;
-	}		
+	}	
 	
-	public static Direction[] getMovementCandidateDirections(RobotController rc) 
+	public static <T> void shuffle(T[] arr,FastRandom random) 
+	{
+        for (int i=arr.length; i>1; i--) {
+            int i1 = i-1;
+			int j = random.nextInt(i);
+			T tmp = arr[i1];
+			arr[i1] = arr[j];
+			arr[j] = tmp;
+        }
+	}
+	
+    public static Direction[] getMovementCandidateDirections(RobotController rc) 
 	{
 		MapLocation location = rc.getLocation();
 		
