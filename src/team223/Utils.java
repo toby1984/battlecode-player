@@ -214,11 +214,14 @@ public class Utils {
 			return null;
 		}
 
-		RobotAndInfo closestSoldierRobot=null;
-		int closestSoldierDistanceSquared=0;
+		RobotAndInfo primaryRobot=null;
+		int primaryDistanceSquared=0;
 		
-		RobotAndInfo closestPastrRobot=null;
-		int closestPastrDistanceSquared=0;		
+		RobotAndInfo secondaryRobot=null;
+		int secondaryDistanceSquared=0;		
+		
+		RobotAndInfo ternaryRobot=null;
+		int ternaryDistanceSquared=0;			
 
 		final MapLocation myLocation = rc.getLocation();
 		final int myAttackRange = rc.getType().attackRadiusMaxSquared;
@@ -231,60 +234,86 @@ public class Utils {
 			{
 				case SOLDIER:
 					int distance = robotInfo.location.distanceSquaredTo( myLocation );
-					if ( closestSoldierRobot == null ) 
+					if ( primaryRobot == null ) 
 					{
-						closestSoldierRobot = new RobotAndInfo(enemy,robotInfo);
-						closestSoldierDistanceSquared = distance;					
+						primaryRobot = new RobotAndInfo(enemy,robotInfo);
+						primaryDistanceSquared = distance;					
 					} 
-					else if ( distance < closestSoldierDistanceSquared ) 
+					else if ( distance < primaryDistanceSquared ) 
 					{
-						boolean inRange1 = ( closestSoldierDistanceSquared <= myAttackRange );
+						boolean inRange1 = ( primaryDistanceSquared <= myAttackRange );
 						boolean inRange2 = ( distance <= myAttackRange );
 						
 						if ( inRange1 && inRange2 ) 
 						{
-							if ( robotInfo.health <= closestSoldierRobot.info.health ) {
-								closestSoldierRobot = new RobotAndInfo(enemy,robotInfo);
-								closestSoldierDistanceSquared = distance;								
+							if ( robotInfo.health <= primaryRobot.info.health ) {
+								primaryRobot = new RobotAndInfo(enemy,robotInfo);
+								primaryDistanceSquared = distance;								
 							}
 						} else {
-							closestSoldierRobot = new RobotAndInfo(enemy,robotInfo);
-							closestSoldierDistanceSquared = distance;
+							primaryRobot = new RobotAndInfo(enemy,robotInfo);
+							primaryDistanceSquared = distance;
 						}						
 					}
 					break;
 				case PASTR:
 					distance = robotInfo.location.distanceSquaredTo( myLocation );
-					if ( closestPastrRobot == null ) 
+					if ( secondaryRobot == null ) 
 					{
-						closestPastrRobot = new RobotAndInfo(enemy,robotInfo);
-						closestPastrDistanceSquared = distance;
+						secondaryRobot = new RobotAndInfo(enemy,robotInfo);
+						secondaryDistanceSquared = distance;
 					} 
-					else if ( distance < closestPastrDistanceSquared ) 
+					else if ( distance < secondaryDistanceSquared ) 
 					{
-						boolean inRange1 = ( closestPastrDistanceSquared <= myAttackRange );
+						boolean inRange1 = ( secondaryDistanceSquared <= myAttackRange );
 						boolean inRange2 = ( distance <= myAttackRange );
 						
 						if ( inRange1 && inRange2 ) 
 						{
-							if ( robotInfo.health <= closestPastrRobot.info.health ) {
-								closestPastrRobot = new RobotAndInfo(enemy,robotInfo);
-								closestPastrDistanceSquared = distance;								
+							if ( robotInfo.health <= secondaryRobot.info.health ) {
+								secondaryRobot = new RobotAndInfo(enemy,robotInfo);
+								secondaryDistanceSquared = distance;								
 							}
 						} else {
-							closestPastrRobot = new RobotAndInfo(enemy,robotInfo);
-							closestPastrDistanceSquared = distance;
+							secondaryRobot = new RobotAndInfo(enemy,robotInfo);
+							secondaryDistanceSquared = distance;
 						}
 					}
 					break;
+				case NOISETOWER:
+					distance = robotInfo.location.distanceSquaredTo( myLocation );
+					if ( ternaryRobot == null ) 
+					{
+						ternaryRobot = new RobotAndInfo(enemy,robotInfo);
+						ternaryDistanceSquared = distance;
+					} 
+					else if ( distance < ternaryDistanceSquared ) 
+					{
+						boolean inRange1 = ( ternaryDistanceSquared <= myAttackRange );
+						boolean inRange2 = ( distance <= myAttackRange );
+						
+						if ( inRange1 && inRange2 ) 
+						{
+							if ( robotInfo.health <= ternaryRobot.info.health ) {
+								ternaryRobot = new RobotAndInfo(enemy,robotInfo);
+								ternaryDistanceSquared = distance;								
+							}
+						} else {
+							ternaryRobot = new RobotAndInfo(enemy,robotInfo);
+							ternaryDistanceSquared = distance;
+						}
+					}					
 				default:
 			}
 		}
 		
-		if ( closestSoldierRobot != null ) {
-			return closestSoldierRobot;
+		if ( primaryRobot != null ) {
+			return primaryRobot;
 		}
-		return closestPastrRobot;
+		if ( secondaryRobot != null ) {
+			return secondaryRobot;
+		}
+		return ternaryRobot;
 	}
 
 	public static MapLocation getMassCenterOfThreats(RobotController rc,Robot[] enemies) throws GameActionException 

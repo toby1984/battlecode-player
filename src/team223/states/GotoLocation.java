@@ -13,7 +13,6 @@ import battlecode.common.MovementType;
 import battlecode.common.Robot;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
-import battlecode.common.RobotType;
 
 public abstract class GotoLocation extends State {
 

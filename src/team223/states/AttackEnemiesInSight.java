@@ -7,7 +7,6 @@ import team223.Utils.RobotAndInfo;
 import battlecode.common.GameActionException;
 import battlecode.common.Robot;
 import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 
 public final class AttackEnemiesInSight extends State {
