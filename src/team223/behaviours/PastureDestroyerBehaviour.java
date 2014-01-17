@@ -130,8 +130,7 @@ public class PastureDestroyerBehaviour extends RobotBehaviour {
 				if ( path != null ) 
 				{
 					if ( MyConstants.DEBUG_MODE) System.out.println("Pasture destroyer found path to "+target);							
-					PathInfo pathInfo = new PathInfo(path); 
-					state = new GotoLocation( pathInfo , MovementType.RUN ) {
+					state = new GotoLocation( path , MovementType.RUN ) {
 
 						@Override
 						protected List<MapLocation> recalculatePath(RobotController rc) throws GameActionException {

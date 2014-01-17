@@ -8,7 +8,6 @@ import java.util.List;
 import team223.AStar;
 import team223.FastRandom;
 import team223.MyConstants;
-import team223.PathInfo;
 import team223.RobotBehaviour;
 import team223.Utils;
 import team223.states.AttackEnemiesInSight;
@@ -25,7 +24,6 @@ import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.Team;
-import battlecode.common.TerrainTile;
 
 public class CowboyBehaviour extends RobotBehaviour {
 
@@ -250,7 +248,7 @@ public class CowboyBehaviour extends RobotBehaviour {
 		{
 			if ( VERBOSE ) System.out.println("Moving to pasture location "+loc);
 			currentDestination = loc;
-			state = new GotoLocation( new PathInfo( path ) , MovementType.SNEAK ) {
+			state = new GotoLocation( path , MovementType.SNEAK ) {
 
 				@Override
 				protected List<MapLocation> recalculatePath(RobotController rc) throws GameActionException 

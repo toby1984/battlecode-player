@@ -3,7 +3,6 @@ package team223.states;
 import java.util.List;
 
 import team223.MyConstants;
-import team223.PathInfo;
 import team223.State;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -13,19 +12,43 @@ import battlecode.common.RobotController;
 
 public abstract class GotoLocation extends State {
 
-	private PathInfo pathInfo = null;
 	private final MovementType movementType;
 	
 	private int movementFailureCount = 0;
 	
-	public GotoLocation(PathInfo info,MovementType movementType) {
-		this.pathInfo = info;
+	private List<MapLocation> currentPath;
+	private int currentPathSize=0;
+	private MapLocation destination;
+	
+	public GotoLocation(List<MapLocation> path,MovementType movementType) {
 		this.movementType = movementType;
+		setNewPath( path );
 	}
 	
 	public MapLocation getDestination() {
-		return pathInfo.end();
+		return destination;
 	}
+	
+	protected final void setNewPath(List<MapLocation> path) {
+		currentPath = path;
+		currentPathSize = path.size();
+		destination = path.get( currentPathSize-1 );
+	}
+	
+	private MapLocation getStepAfter(MapLocation current) 
+	{
+		for ( int i = 0 ; i < currentPathSize ; i++ ) 
+		{
+			MapLocation loc = currentPath.get(i);
+			if ( loc.equals( current ) ) {
+				if ( (i+1) < currentPathSize ) {
+					return currentPath.get(i+1);
+				}
+				break;
+			} 
+		}
+		return null;
+	}	
 	
 	protected abstract List<MapLocation> recalculatePath(RobotController rc) throws GameActionException;
 	
@@ -34,11 +57,11 @@ public abstract class GotoLocation extends State {
 	{
 		final MapLocation myLocation = rc.getLocation();
 		
-		if ( hasArrivedAtDestination( myLocation , pathInfo.end() ) ) {
+		if ( hasArrivedAtDestination( myLocation , destination ) ) {
 			return null;
 		} 
 		
-		MapLocation next = pathInfo.getStepAfter( myLocation );
+		MapLocation next = getStepAfter( myLocation );
 		if ( next != null ) 
 		{
 			Direction direction = myLocation.directionTo( next );
@@ -58,25 +81,30 @@ public abstract class GotoLocation extends State {
 			{
 				movementFailureCount++;
 				if ( MyConstants.DEBUG_MODE) System.out.println("Failed to move "+myLocation+" -> "+next+" (count: "+movementFailureCount+")");
+				
 				if ( movementFailureCount > MyConstants.MAX_PATH_MOVEMENT_FAILURES ) 
 				{
 					// 	movement failed too many times, some new obstacle is blocking us...recalculate path					
 					if ( MyConstants.DEBUG_MODE) System.out.println("Re-calculating path "+myLocation+" -> "+next);						
 					movementFailureCount = 0;
-					pathInfo = new PathInfo( recalculatePath(rc) );
-					if ( pathInfo.path == null ) {
+					List<MapLocation> newPath = recalculatePath(rc);
+					if ( newPath == null ) {
 						if ( MyConstants.DEBUG_MODE) System.out.println("ERROR: Failed to recalculate path" );						
 						return null;
 					}
+					setNewPath( newPath );
 				}
 			}
 			return this;
-		} else {
-			pathInfo = new PathInfo( recalculatePath(rc) );
-			if ( pathInfo.path != null ) {
+		} 
+		else {
+			if ( MyConstants.DEBUG_MODE) System.out.println("ERROR: At "+rc.getLocation()+" , no next step on path "+currentPath );
+			
+			List<MapLocation> newPath  = recalculatePath(rc);
+			if ( newPath != null ) {
+				setNewPath( newPath );
 				return this;
 			}
-			if ( MyConstants.DEBUG_MODE) System.out.println("ERROR: At "+rc.getLocation()+" , no next step on path "+pathInfo.path );
 		}
 		return null;
 	}

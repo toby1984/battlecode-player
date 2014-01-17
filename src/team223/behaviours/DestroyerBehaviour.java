@@ -10,13 +10,13 @@ import battlecode.common.*;
 
 public class DestroyerBehaviour extends RobotBehaviour {
 
-	private final FastRandom random;
+	private final FastRandom rnd;
 	
 	private final AStar finder;
 	
 	public DestroyerBehaviour(final RobotController rc,FastRandom random,MapLocation enemyHQLocation) {
 		super(rc,enemyHQLocation);
-		this.random = random;
+		this.rnd = random;
     	this.finder = new AStar(rc) 
     	{
 			@Override
@@ -50,7 +50,7 @@ public class DestroyerBehaviour extends RobotBehaviour {
 			enemies = Utils.findEnemies( rc , RobotType.SOLDIER.attackRadiusMaxSquared );
 			if ( Utils.getEstimatedHealOfThreats( rc , enemies ) >= rc.getHealth() ) 
 			{ 
-				state = new Fleeing( random );
+				state = new Fleeing( rnd );
 				if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
 				state = state.perform( rc );
 				return;
@@ -83,9 +83,9 @@ public class DestroyerBehaviour extends RobotBehaviour {
 		// home-in on enemy HQ
 		if ( enemyHQLocation.distanceSquaredTo( rc.getLocation() ) > MyConstants.SOLIDER_HOMEIN_ON_HQ_DISTANCE_SQUARED ) 
 		{
-			PathInfo info = new PathInfo( findPathToHQ( rc ) );
-			if ( info.path != null ) {
-				state = new GotoLocation(info,MovementType.RUN) {
+			List<MapLocation> path = findPathToHQ( rc );
+			if ( path != null ) {
+				state = new GotoLocation( path , MovementType.RUN) {
 
 					@Override
 					protected List<MapLocation> recalculatePath(RobotController rc) throws GameActionException {
@@ -104,16 +104,14 @@ public class DestroyerBehaviour extends RobotBehaviour {
 				return;
 			} 
 			if ( MyConstants.DEBUG_MODE ) System.out.println("ERROR: No path to HQ ?");
-		} else {
-			wander(rc);
-		}
-	}
-	
-	private void wander(RobotController rc) throws GameActionException {
-		Direction d = Utils.randomMovementDirection(random,rc);
-		if ( d != Direction.NONE ) {
-			if ( rc.getLocation().add( d ).distanceSquaredTo( enemyHQLocation ) > RobotType.HQ.attackRadiusMaxSquared ) {
-				rc.move(d);
+		} 
+		else 
+		{
+			Direction d = Utils.randomMovementDirection(rnd,rc);
+			if ( d != Direction.NONE ) {
+				if ( rc.getLocation().add( d ).distanceSquaredTo( enemyHQLocation ) > RobotType.HQ.attackRadiusMaxSquared ) {
+					rc.move(d);
+				}
 			}
 		}
 	}
@@ -128,7 +126,7 @@ public class DestroyerBehaviour extends RobotBehaviour {
 	protected List<MapLocation> findPathToHQ(RobotController rc) throws GameActionException {
 		MapLocation dst = Utils.findRandomLocationNear( rc , enemyHQLocation , 
 				MyConstants.ENEMY_HQ_SAFE_DISTANCE ,  
-				MyConstants.ENEMY_HQ_SAFE_DISTANCE*2, random );
+				MyConstants.ENEMY_HQ_SAFE_DISTANCE*2, rnd );
 		if ( dst != null ) {
 			return finder.findPath( rc.getLocation() , dst );
 		}
