@@ -58,17 +58,32 @@ public class CowboyBehaviour extends RobotBehaviour {
 	private MapLocation currentDestination;
 
 	private final Team myTeam;
+	
+	private final AStar finder;
 
-	public CowboyBehaviour(RobotController rc,Team myTeam,FastRandom rnd,MapLocation enemyHQLocation) {
-		super(enemyHQLocation);
+	public CowboyBehaviour(final RobotController rc,Team myTeam,FastRandom rnd,MapLocation enemyHQLocation) {
+		super(rc,enemyHQLocation);
 		this.rnd=rnd;
 		this.myTeam = myTeam;
 		final Direction[] candidates = Utils.getMovementCandidateDirections( rc );
 		generalDirection = candidates[ rnd.nextInt( candidates.length ) ];
+		this.finder = new AStar( rc ) {
+
+			@Override
+			protected boolean isCloseEnoughToTarget(PathNode<MapLocation> node) {
+				return node.value.equals( destination );
+			}
+
+			@Override
+			public boolean isOccupied(MapLocation loc) throws GameActionException 
+			{
+				return rc.canSenseSquare( loc ) ? rc.senseObjectAtLocation( loc ) != null : false;						
+			}			
+		};
 	}
 
 	@Override
-	public void perform(RobotController rc) throws GameActionException 
+	public void perform() throws GameActionException 
 	{
 		roundCount++;
 
@@ -230,7 +245,7 @@ public class CowboyBehaviour extends RobotBehaviour {
 
 	private boolean gotoLocation(final RobotController rc,final MapLocation loc) throws GameActionException 
 	{
-		List<MapLocation> path = findPath( rc , rc.getLocation() , loc );
+		List<MapLocation> path = finder.findPath( rc.getLocation() , loc );
 		if ( path != null ) 
 		{
 			if ( VERBOSE ) System.out.println("Moving to pasture location "+loc);
@@ -240,7 +255,7 @@ public class CowboyBehaviour extends RobotBehaviour {
 				@Override
 				protected List<MapLocation> recalculatePath(RobotController rc) throws GameActionException 
 				{
-					return findPath( rc , rc.getLocation() , loc );
+					return finder.findPath( rc.getLocation() , loc );
 				}
 
 				@Override
@@ -299,29 +314,6 @@ public class CowboyBehaviour extends RobotBehaviour {
 
 	protected boolean hasArrivedAtDestination(MapLocation current,MapLocation dstLoc) {
 		return current.equals( dstLoc );
-	}
-
-	private List<MapLocation> findPath(final RobotController rc, MapLocation from,final MapLocation to) throws GameActionException {
-		final AStar finder = new AStar( from , to ) {
-
-			@Override
-			protected boolean isCloseEnoughToTarget(PathNode<MapLocation> node) {
-				return node.value.equals( to );
-			}
-
-			@Override
-			public TerrainTile senseTerrainTile(MapLocation loc) {
-				return rc.senseTerrainTile( loc );
-			}
-
-			@Override
-			public boolean isOccupied(MapLocation loc) throws GameActionException 
-			{
-				return rc.canSenseSquare( loc ) ? rc.senseObjectAtLocation( loc ) != null : false;						
-			}			
-		};
-
-		return Utils.findPath( finder );		
 	}
 
 	private void wanderingMode(RobotController rc) throws GameActionException {

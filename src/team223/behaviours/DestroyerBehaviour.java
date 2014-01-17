@@ -12,13 +12,28 @@ public class DestroyerBehaviour extends RobotBehaviour {
 
 	private final FastRandom random;
 	
-	public DestroyerBehaviour(FastRandom random,MapLocation enemyHQLocation) {
-		super(enemyHQLocation);
+	private final AStar finder;
+	
+	public DestroyerBehaviour(final RobotController rc,FastRandom random,MapLocation enemyHQLocation) {
+		super(rc,enemyHQLocation);
 		this.random = random;
+    	this.finder = new AStar(rc) 
+    	{
+			@Override
+			protected boolean isCloseEnoughToTarget(team223.AStar.PathNode<MapLocation> node) 
+			{
+				return hasArrivedAtDestination( node.value , destination );
+			}
+
+			@Override
+			public boolean isOccupied(MapLocation loc) throws GameActionException {
+				return false;
+			}
+		};		
 	}
 	
 	@Override
-	public void perform(RobotController rc) throws GameActionException {
+	public void perform() throws GameActionException {
 
 		if ( ! rc.isActive() ) {
 			return;
@@ -115,33 +130,11 @@ public class DestroyerBehaviour extends RobotBehaviour {
 				MyConstants.ENEMY_HQ_SAFE_DISTANCE ,  
 				MyConstants.ENEMY_HQ_SAFE_DISTANCE*2, random );
 		if ( dst != null ) {
-			return findPath( rc , rc.getLocation() , dst );
+			return finder.findPath( rc.getLocation() , dst );
 		}
 		return null;
 	}
 
-    protected List<MapLocation> findPath(final RobotController rc,final MapLocation startLoc,final MapLocation dstLoc) throws GameActionException {
-    	
-    	final AStar pathFinder = new AStar(startLoc,dstLoc) 
-    	{
-			@Override
-			protected boolean isCloseEnoughToTarget(team223.AStar.PathNode<MapLocation> node) 
-			{
-				return hasArrivedAtDestination( node.value , destination );
-			}
-
-			@Override
-			public TerrainTile senseTerrainTile(MapLocation loc) {
-				return rc.senseTerrainTile( loc );
-			}
-
-			@Override
-			public boolean isOccupied(MapLocation loc) throws GameActionException {
-				return false;
-			}
-		};
-		return Utils.findPath( pathFinder );
-    }		
 	@Override
 	public String toString() {
 		return "Destroyer";

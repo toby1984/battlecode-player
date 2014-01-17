@@ -31,20 +31,20 @@ public class RobotPlayer
 				if ( behaviour == null ) 
 				{
 					if ( rc.getType() == RobotType.HQ ) {
-						behaviour = new HQBehaviour( random , rc.senseEnemyHQLocation() );
+						behaviour = new HQBehaviour( rc , random , rc.senseEnemyHQLocation() );
 					} 
 					else if ( rc.getType() != RobotType.PASTR ) 
 					{
 						int data = rc.readBroadcast( HQBehaviour.HQ_BROADCAST_CHANNEL );
 						switch( data ) {
 							case HQBehaviour.SPAWN_DESTROYER:
-								behaviour = new DestroyerBehaviour( random , rc.senseEnemyHQLocation() );										
+								behaviour = new DestroyerBehaviour( rc , random , rc.senseEnemyHQLocation() );										
 								break;
 							case HQBehaviour.SPAWN_COWBOY:
 								behaviour = new CowboyBehaviour( rc , myTeam , random , rc.senseEnemyHQLocation() );								
 								break;
 							case HQBehaviour.SPAWN_PASTURE_DESTROYER:
-								behaviour = new PastureDestroyerBehaviour( random , rc.senseEnemyHQLocation() );
+								behaviour = new PastureDestroyerBehaviour( rc , random , rc.senseEnemyHQLocation() );
 								break;
 							default:
 								throw new RuntimeException("Failed to read broadcast from HQ ?");
@@ -56,7 +56,7 @@ public class RobotPlayer
 				
 				if ( invocationCount > stepsToBackOff || rc.getType() != RobotType.SOLDIER ) 
 				{
-					behaviour.perform( rc );
+					behaviour.perform();
 				} 
 				else 
 				{

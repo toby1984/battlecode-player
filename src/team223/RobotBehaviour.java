@@ -9,19 +9,21 @@ public abstract class RobotBehaviour {
 	protected volatile State state;
 	
 	protected final MapLocation enemyHQLocation;
+	protected final RobotController rc;
 	
-	public static final RobotBehaviour NOP_BEHAVIOUR = new RobotBehaviour(null) {
+	public static final RobotBehaviour NOP_BEHAVIOUR = new RobotBehaviour(null,null) {
 		
 		@Override
-		public void perform(RobotController rc) throws GameActionException {
+		public void perform() throws GameActionException {
 		}
 	};
 	
-	public RobotBehaviour(MapLocation enemyHQLocation) {
+	public RobotBehaviour(RobotController rc, MapLocation enemyHQLocation) {
 		this.enemyHQLocation = enemyHQLocation;
+		this.rc = rc;
 	}
 	
-	public abstract void perform(RobotController rc) throws GameActionException;
+	public abstract void perform() throws GameActionException;
 	
 	public final void changedBehaviour(RobotController rc,String message) 
 	{

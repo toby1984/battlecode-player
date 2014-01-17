@@ -20,13 +20,13 @@ public class HQBehaviour extends RobotBehaviour {
 	private static int pastureDestroyerCount=0;
 	private static int cowboyCount=0;
 	
-	public HQBehaviour(FastRandom rnd,MapLocation enemyHQLocation) {
-		super(enemyHQLocation);
+	public HQBehaviour(RobotController rc,FastRandom rnd,MapLocation enemyHQLocation) {
+		super(rc,enemyHQLocation);
 		this.rnd=rnd;
 	}
 	
 	@Override
-	public void perform(RobotController rc) throws GameActionException 
+	public void perform() throws GameActionException 
 	{
 		// check if a robot is spawnable and spawn one if it is
 		if ( ! rc.isActive() ) {

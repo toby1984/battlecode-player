@@ -1,9 +1,19 @@
 package team223;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Set;
+import java.util.Stack;
 
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
+import battlecode.common.RobotController;
 import battlecode.common.TerrainTile;
 
 
@@ -18,6 +28,8 @@ public abstract class AStar
 	
     protected MapLocation start;
     protected MapLocation destination;
+    
+    private final RobotController rc;
     
     public final static class PathNode<V> implements Comparable<PathNode<V>>
     {
@@ -127,7 +139,7 @@ public abstract class AStar
             return builder.toString();            
         }
         
-        protected String nodeToString(PathNode<V> n) {
+        private String nodeToString(PathNode<V> n) {
         	return n.value == null ? "<NULL>" : n.value.toString();
         }
     }
@@ -138,25 +150,30 @@ public abstract class AStar
         openList.add( node );
 	}    
 	
-	public AStar(MapLocation start,MapLocation destination) {
-		this.start = start;
-		this.destination = destination;
+	public AStar(RobotController rc) {
+		this.rc = rc;
 	}
 	
-    public PathNode<MapLocation> findPath() throws GameActionException 
+    public List<MapLocation> findPath(MapLocation from,MapLocation to) throws GameActionException 
     {
-    	final PathNode<MapLocation> startNode = new PathNode<MapLocation>( start );
-    	final PathNode<MapLocation> endNode = new PathNode<MapLocation>( destination );
-		if ( MyConstants.DEBUG_MODE) System.out.println("Looking for path from "+startNode.value+" to "+endNode.value);
-		return findPath( startNode ,endNode );
-    }
-    
-    private PathNode<MapLocation> findPath(PathNode<MapLocation> start,PathNode<MapLocation> target) throws GameActionException 
-    {
-        if ( start.equals( target ) ) { // trivial case
-            return start;
+		if ( MyConstants.DEBUG_MODE) System.out.println("Looking for path from "+from+" to "+to);
+		
+        if ( from.equals(  to ) ) { // trivial case
+        	List<MapLocation> result = new ArrayList<MapLocation>();
+        	result.add( from );
+        	result.add( to );
+            return result;
         }
-
+        
+    	openMap.clear();
+    	openList.clear();
+    	closeList.clear();
+    	
+    	this.start = from;
+    	this.destination = to;
+    	
+    	final PathNode<MapLocation> start = new PathNode<MapLocation>( from );
+    	
         openMap.clear();
         openList.clear();
         closeList.clear();
@@ -174,11 +191,17 @@ public abstract class AStar
                 return null;
             }
 
-            final PathNode<MapLocation> cheapestPath = openList.remove();
+            PathNode<MapLocation> cheapestPath = openList.remove();
 
             if ( isCloseEnoughToTarget( cheapestPath ) ) 
             {
-                return cheapestPath;
+        		List<MapLocation> result = new ArrayList<MapLocation>();
+        		do {
+        			result.add( cheapestPath.value );
+        			cheapestPath = cheapestPath.parent;
+        		} while ( cheapestPath != null );
+        		Collections.reverse( result );
+        		return result;            	
             }            
             
             openMap.remove( cheapestPath );
@@ -198,7 +221,7 @@ public abstract class AStar
         current.g( movementCost );
     }
 
-	protected final float calcMovementCost(team223.AStar.PathNode<MapLocation> current) 
+	private final float calcMovementCost(team223.AStar.PathNode<MapLocation> current) 
 	{
         float cost=0;
         if( current.parent != null ) 
@@ -209,13 +232,13 @@ public abstract class AStar
         return cost;
 	}
 	
-	protected final float calcEstimatedCost( team223.AStar.PathNode<MapLocation> node) 
+	private final float calcEstimatedCost( team223.AStar.PathNode<MapLocation> node) 
 	{
     	// WEIGHTED A-STAR !!!
     	return 4 * (float) Math.sqrt( destination.distanceSquaredTo(  node.value ) );
 	}
 
-	protected void scheduleNeighbors(team223.AStar.PathNode<MapLocation> parent) throws GameActionException 
+	private final void scheduleNeighbors(team223.AStar.PathNode<MapLocation> parent) throws GameActionException 
 	{
 		int x = parent.value.x;
 		int y = parent.value.y;
@@ -226,7 +249,7 @@ public abstract class AStar
 				if ( dx != 0 || dy != 0 ) 
 				{
 					final MapLocation newLocation = new MapLocation(x+dx,y+dy);
-					final TerrainTile tile = senseTerrainTile( newLocation );
+					final TerrainTile tile = rc.senseTerrainTile( newLocation );
 					if ( ( tile == TerrainTile.NORMAL || tile == TerrainTile.ROAD ) && ! isOccupied( newLocation ) ) 
 					{ 
 						maybeAddNeighbor( parent , newLocation );
@@ -236,7 +259,7 @@ public abstract class AStar
 		}
 	}	
     
-    protected final void maybeAddNeighbor(PathNode<MapLocation> parent, MapLocation point)
+    private final void maybeAddNeighbor(PathNode<MapLocation> parent, MapLocation point)
     {
         final PathNode<MapLocation> newNode = new PathNode<MapLocation>( point , parent );
         if ( ! closeList.contains(newNode) ) 
@@ -252,7 +275,5 @@ public abstract class AStar
         }
     }
     
-	public abstract TerrainTile senseTerrainTile(MapLocation loc);
-
 	public abstract boolean isOccupied(MapLocation loc) throws GameActionException;    
 }

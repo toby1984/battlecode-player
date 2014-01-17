@@ -144,22 +144,6 @@ public class Utils {
 		throw new RuntimeException("Unreachable code reached, map size: "+rc.getMapWidth()+"x"+rc.getMapHeight()+" , location: "+location+" , x: "+locX+" , y: "+locY);
 	}
 	
-	public static List<MapLocation> findPath(AStar pathFinder) throws GameActionException 
-	{
-		PathNode<MapLocation> node = pathFinder.findPath();
-		if ( node == null ) {
-			return null;
-		}
-		
-		List<MapLocation> path = new ArrayList<MapLocation>();
-		do {
-			path.add( node.value );
-			node = node.parent;
-		} while ( node != null );
-		Collections.reverse( path );
-		return path;		
-	}
-	
 	public static final Robot[] findEnemies(RobotController rc,int distanceSquared) {
 		return rc.senseNearbyGameObjects(Robot.class,distanceSquared,rc.getTeam().opponent());			
 	}

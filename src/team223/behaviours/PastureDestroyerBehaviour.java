@@ -17,13 +17,29 @@ public class PastureDestroyerBehaviour extends RobotBehaviour {
 
 	private final FastRandom rnd;
 	
-	public PastureDestroyerBehaviour( FastRandom rnd , MapLocation enemyHQLocation) {
-		super(enemyHQLocation);
+	private final AStar finder;
+	
+	public PastureDestroyerBehaviour(final RobotController rc, FastRandom rnd , MapLocation enemyHQLocation) {
+		super(rc,enemyHQLocation);
 		this.rnd=rnd;
+		this.finder = new AStar(rc) {
+			
+			@Override
+			protected boolean isCloseEnoughToTarget(PathNode<MapLocation> node) 
+			{
+				return hasArrivedAtDestination( node.value , destination );
+			}
+			
+			@Override
+			public boolean isOccupied(MapLocation loc) throws GameActionException 
+			{
+				return rc.canSenseSquare( loc ) ? rc.senseObjectAtLocation( loc ) != null : false;
+			}
+		};		
 	}
 	
 	@Override
-	public void perform(RobotController rc) throws GameActionException 
+	public void perform() throws GameActionException 
 	{
 		roundCounter++;
 		if ( ! rc.isActive() ) {
@@ -110,7 +126,7 @@ public class PastureDestroyerBehaviour extends RobotBehaviour {
 				if ( MyConstants.DEBUG_MODE) {
 					System.out.println("Calculating path to closest pasture "+target);
 				}
-				final List<MapLocation> path = findPath( rc , myLocation , target );
+				final List<MapLocation> path = finder.findPath( myLocation , target );
 				if ( path != null ) 
 				{
 					if ( MyConstants.DEBUG_MODE) System.out.println("Pasture destroyer found path to "+target);							
@@ -119,7 +135,7 @@ public class PastureDestroyerBehaviour extends RobotBehaviour {
 
 						@Override
 						protected List<MapLocation> recalculatePath(RobotController rc) throws GameActionException {
-							return findPath( rc , rc.getLocation() , target );
+							return finder.findPath( rc.getLocation() , target );
 						}
 						
 						@Override
@@ -164,30 +180,6 @@ public class PastureDestroyerBehaviour extends RobotBehaviour {
 		}
 		return null;
  	}
-	
-	private List<MapLocation> findPath(final RobotController rc,MapLocation start,final MapLocation end) throws GameActionException 
-	{
-		AStar finder = new AStar(start,end) {
-			
-			@Override
-			protected boolean isCloseEnoughToTarget(PathNode<MapLocation> node) 
-			{
-				return hasArrivedAtDestination( node.value , destination );
-			}
-			
-			@Override
-			public TerrainTile senseTerrainTile(MapLocation loc) {
-				return rc.senseTerrainTile( loc );
-			}
-
-			@Override
-			public boolean isOccupied(MapLocation loc) throws GameActionException 
-			{
-				return rc.canSenseSquare( loc ) ? rc.senseObjectAtLocation( loc ) != null : false;
-			}
-		};
-		return Utils.findPath(finder );
-	}
 	
 	protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
 		return current.distanceSquaredTo( dstLoc ) <= RobotType.SOLDIER.attackRadiusMaxSquared*0.5f;							
