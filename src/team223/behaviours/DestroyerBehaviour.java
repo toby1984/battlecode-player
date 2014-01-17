@@ -71,7 +71,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 			enemies = Utils.findEnemies(rc , MyConstants.SOLDIER_SEEK_ENEMY_RANGE_SQUARED);
 		}
 		
-		final RobotAndInfo closestEnemy = Utils.findClosestEnemy( rc , enemies);
+		final RobotAndInfo closestEnemy = Utils.pickEnemyToAttack( rc , enemies);
 		if ( closestEnemy != null ) 
 		{
 			checkForEnemiesAtEachStep = false;

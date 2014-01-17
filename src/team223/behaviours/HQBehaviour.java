@@ -50,7 +50,7 @@ public final class HQBehaviour extends RobotBehaviour {
 		}
 		
 		final Robot[] enemies = Utils.findEnemies( rc , RobotType.HQ.attackRadiusMaxSquared );
-		RobotAndInfo enemy = Utils.findClosestEnemy( rc , enemies );
+		RobotAndInfo enemy = Utils.pickEnemyToAttack( rc , enemies );
 		if ( enemy != null ) 
 		{
 			state = new Attacking( rc , enemy.robot, enemyHQLocation , false );

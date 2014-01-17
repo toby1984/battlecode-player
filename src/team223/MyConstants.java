@@ -15,7 +15,7 @@ public interface MyConstants
 	/**
 	 * Distance up to which destroyers will try to hunt-down enemy robots.
 	 */
-	public static final int SOLDIER_SEEK_ENEMY_RANGE_SQUARED = (SOLDIER_ATTACK_RANGE*2)*(SOLDIER_ATTACK_RANGE)*2;	
+	public static final int SOLDIER_SEEK_ENEMY_RANGE_SQUARED = (SOLDIER_ATTACK_RANGE*3)*(SOLDIER_ATTACK_RANGE*3);	
 	
 	/**
 	 * Closest distance to attack range of enemy HQ , used to avoid coming under fire from enemy HQ.

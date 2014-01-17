@@ -49,10 +49,12 @@ public final class Attacking extends State {
 				}
 			} else {
 				movementFailures++;
-				if ( movementFailures > 5 ) {
+				if ( movementFailures > 3 ) {
 					return null;
 				}
 			}
+		} else {
+			return null;
 		}
 		return this;
 	}
