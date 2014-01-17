@@ -57,15 +57,11 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 		
 		if ( state instanceof InterruptibleGotoLocation ) 
 		{
-			InterruptibleGotoLocation oldState = (InterruptibleGotoLocation) state;
-			if ( VERBOSE ) System.out.println("Moving towards "+oldState.getDestination() );
 			state = state.perform();
 			if ( state == null ) 
 			{
 				// destination reached
-				int dist = rc.getLocation().distanceSquaredTo( oldState.getDestination() );
-				if ( VERBOSE ) System.out.println("Pasture destroyer is at "+rc.getLocation()+" and thus reached designated target location "+oldState.getDestination()+" (dist: "+dist+", required: "+
-				RobotType.SOLDIER.attackRadiusMaxSquared);
+				if ( VERBOSE ) System.out.println("Pasture destroyer is at "+rc.getLocation() );
 				state = new AttackEnemiesInSight(rc);
 				if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
 			}

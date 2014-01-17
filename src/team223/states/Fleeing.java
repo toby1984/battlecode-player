@@ -62,5 +62,4 @@ public final class Fleeing extends State {
     public String toString() {
     	return getClass().getSimpleName();
     }	
-
 }
