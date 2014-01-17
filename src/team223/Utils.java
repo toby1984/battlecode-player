@@ -43,6 +43,7 @@ public class Utils {
 		{
 			int x = minX+(int) (dx*rnd.nextFloat());
 			int y = minY+(int) (dy*rnd.nextFloat());
+			
 			float distX = x-currentLocation.x;
 			float distY = y-currentLocation.y;
 			float distSquared = distX*distX+distY*distY;
