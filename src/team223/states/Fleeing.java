@@ -10,7 +10,7 @@ import battlecode.common.MapLocation;
 import battlecode.common.Robot;
 import battlecode.common.RobotController;
 
-public class Fleeing extends State {
+public final class Fleeing extends State {
 
 	private FastRandom rnd;
 	

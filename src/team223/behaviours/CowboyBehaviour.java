@@ -25,7 +25,7 @@ import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.Team;
 
-public class CowboyBehaviour extends RobotBehaviour {
+public final class CowboyBehaviour extends RobotBehaviour {
 
 	private final FastRandom rnd;
 

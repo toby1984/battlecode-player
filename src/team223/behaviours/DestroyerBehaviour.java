@@ -8,7 +8,7 @@ import team223.states.Fleeing;
 import team223.states.GotoLocation;
 import battlecode.common.*;
 
-public class DestroyerBehaviour extends RobotBehaviour {
+public final class DestroyerBehaviour extends RobotBehaviour {
 
 	private final FastRandom rnd;
 	

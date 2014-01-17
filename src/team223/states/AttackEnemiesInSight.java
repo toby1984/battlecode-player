@@ -4,7 +4,7 @@ import team223.MyConstants;
 import team223.State;
 import battlecode.common.*;
 
-public class AttackEnemiesInSight extends State {
+public final class AttackEnemiesInSight extends State {
 
 	private static final boolean VERBOSE = false;
 	

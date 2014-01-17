@@ -4,7 +4,7 @@ import team223.*;
 import team223.states.Attacking;
 import battlecode.common.*;
 
-public class HQBehaviour extends RobotBehaviour {
+public final class HQBehaviour extends RobotBehaviour {
 
 	private final FastRandom rnd;
 	

@@ -8,7 +8,7 @@ import team223.states.Fleeing;
 import team223.states.GotoLocation;
 import battlecode.common.*;
 
-public class PastureDestroyerBehaviour extends RobotBehaviour {
+public final class PastureDestroyerBehaviour extends RobotBehaviour {
 
 	private static final boolean VERBOSE = false;
 	

@@ -25,17 +25,17 @@ public abstract class GotoLocation extends State {
 		setNewPath( path );
 	}
 	
-	public MapLocation getDestination() {
+	public final MapLocation getDestination() {
 		return destination;
 	}
 	
-	protected final void setNewPath(List<MapLocation> path) {
+	private void setNewPath(List<MapLocation> path) {
 		currentPath = path;
 		currentPathSize = path.size();
 		destination = path.get( currentPathSize-1 );
 	}
 	
-	private MapLocation getStepAfter(MapLocation current) 
+	private MapLocation nextStep(MapLocation current) 
 	{
 		for ( int i = 0 ; i < currentPathSize ; i++ ) 
 		{
@@ -53,7 +53,7 @@ public abstract class GotoLocation extends State {
 	protected abstract List<MapLocation> recalculatePath(RobotController rc) throws GameActionException;
 	
 	@Override
-	public State perform(RobotController rc) throws GameActionException 
+	public final State perform(RobotController rc) throws GameActionException 
 	{
 		final MapLocation myLocation = rc.getLocation();
 		
@@ -61,7 +61,7 @@ public abstract class GotoLocation extends State {
 			return null;
 		} 
 		
-		MapLocation next = getStepAfter( myLocation );
+		MapLocation next = nextStep( myLocation );
 		if ( next != null ) 
 		{
 			Direction direction = myLocation.directionTo( next );

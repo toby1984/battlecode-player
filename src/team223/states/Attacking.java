@@ -3,7 +3,7 @@ package team223.states;
 import team223.State;
 import battlecode.common.*;
 
-public class Attacking extends State {
+public final class Attacking extends State {
 
 	private final Robot enemy;
 	private final MapLocation enemyHQLocation;
