@@ -38,13 +38,16 @@ public class RobotPlayer
 						int data = rc.readBroadcast( HQBehaviour.HQ_BROADCAST_CHANNEL );
 						switch( data ) {
 							case HQBehaviour.SPAWN_DESTROYER:
-								behaviour = new DestroyerBehaviour( rc , random , rc.senseEnemyHQLocation() );										
+								behaviour = new DestroyerBehaviour( rc , random , rc.senseEnemyHQLocation() );		
+								if ( MyConstants.DEBUG_MODE ) System.out.println("Robot is a destroyer");
 								break;
 							case HQBehaviour.SPAWN_COWBOY:
-								behaviour = new CowboyBehaviour( rc , myTeam , random , rc.senseEnemyHQLocation() );								
+								behaviour = new CowboyBehaviour( rc , myTeam , random , rc.senseEnemyHQLocation() );
+								if ( MyConstants.DEBUG_MODE ) System.out.println("Robot is a cowboy");
 								break;
 							case HQBehaviour.SPAWN_PASTURE_DESTROYER:
 								behaviour = new PastureDestroyerBehaviour( rc , random , rc.senseEnemyHQLocation() );
+								if ( MyConstants.DEBUG_MODE ) System.out.println("Robot is a HQ");
 								break;
 							default:
 								throw new RuntimeException("Failed to read broadcast from HQ ?");

@@ -44,6 +44,8 @@ public abstract class AStar
     private boolean finished = false;
     private boolean aborted = false;
     
+    private final MapLocation enemyHQ;
+    
     private Callback callback;
     
     public static enum Result {
@@ -183,6 +185,7 @@ public abstract class AStar
 	
 	public AStar(RobotController rc) {
 		this.rc = rc;
+		this.enemyHQ = rc.senseEnemyHQLocation();
 	}
 	
 	public boolean isInterrupted() {
@@ -410,10 +413,13 @@ public abstract class AStar
 				if ( dx != 0 || dy != 0 ) 
 				{
 					final MapLocation newLocation = new MapLocation(x+dx,y+dy);
-					final TerrainTile tile = rc.senseTerrainTile( newLocation );
-					if ( ( tile == TerrainTile.NORMAL || tile == TerrainTile.ROAD ) && ! isOccupied( newLocation ) ) 
-					{ 
-						maybeAddNeighbor( parent , newLocation );
+					if ( newLocation.distanceSquaredTo( enemyHQ ) >= MyConstants.ENEMY_HQ_SAFE_DISTANCE_SRT ) 
+					{
+						final TerrainTile tile = rc.senseTerrainTile( newLocation );
+						if ( ( tile == TerrainTile.NORMAL || tile == TerrainTile.ROAD ) && ! isOccupied( newLocation ) ) 
+						{ 
+							maybeAddNeighbor( parent , newLocation );
+						}
 					}
 				}
 			}

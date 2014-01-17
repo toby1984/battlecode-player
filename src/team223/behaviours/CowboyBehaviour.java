@@ -146,7 +146,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 		}
 
 		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) {
-			state = new Fleeing(rc,rnd);
+			state = new Fleeing(rc,rnd,enemyHQLocation);
 			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
 			state = state.perform(  );
 			return;
@@ -231,16 +231,11 @@ public final class CowboyBehaviour extends RobotBehaviour {
 		
 		currentDestination = loc;
 		
-		state = new InterruptibleGotoLocation( rc , MovementType.SNEAK , rnd ) {
+		state = new InterruptibleGotoLocation( rc , MovementType.SNEAK , rnd , enemyHQLocation) {
 
 			@Override
 			protected boolean hasArrivedAtDestination(MapLocation current,MapLocation dstLoc) {
 				return current.equals( dstLoc );
-			}
-
-			@Override
-			public boolean isOccupied(MapLocation loc) throws GameActionException {
-				return rc.canSenseSquare( loc ) ? rc.senseObjectAtLocation( loc ) != null : false;					
 			}
 
 			@Override

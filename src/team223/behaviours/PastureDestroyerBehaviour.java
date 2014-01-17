@@ -44,7 +44,7 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 		} 
 		
 		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) {
-			state = new Fleeing( rc , rnd );
+			state = new Fleeing( rc , rnd , enemyHQLocation );
 			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }			
 			state = state.perform();
 			return;
@@ -75,9 +75,13 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 		if ( pastrLocations == null || pastrLocations.length == 0 || roundCounter > 10 ) 
 		{
 			roundCounter=0;
+			if ( MyConstants.DEBUG_MODE ) System.out.println("Looking for pastures...");			
 			pastrLocations = rc.sensePastrLocations( rc.getTeam().opponent() );
 			if (pastrLocations.length == 0 ) {
-				if ( MyConstants.DEBUG_MODE ) System.out.println("No pastures found");				
+				if ( MyConstants.DEBUG_MODE ) {
+					System.out.println("No pastures found to destroy");
+					rc.setIndicatorString( 1 , "No pastures to destroy" );
+				}
 				return;
 			}
 			
@@ -89,6 +93,7 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 				final MapLocation target = pickClosestTarget(myLocation);
 				if ( target == null ) {
 					if ( MyConstants.DEBUG_MODE) System.out.println("No (more) pastures");
+					pastrLocations = null;
 					return;
 				}
 				
@@ -118,7 +123,7 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 					System.out.println("Calculating path to closest pasture "+target);
 				}
 					
-				state = new InterruptibleGotoLocation( rc , MovementType.RUN , rnd ) {
+				state = new InterruptibleGotoLocation( rc , MovementType.RUN , rnd , enemyHQLocation ) {
 
 					@Override
 					protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
@@ -126,13 +131,8 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 					}
 
 					@Override
-					public boolean isOccupied(MapLocation loc) throws GameActionException {
-						return rc.canSenseSquare( loc ) ? rc.senseObjectAtLocation( loc ) != null : false;
-					}
-
-					@Override
 					public boolean setStartAndDestination(AStar finder) {
-						finder.setRoute( myLocation , target );
+						finder.setRoute( rc.getLocation() , target );
 						return true;
 					}
 				};

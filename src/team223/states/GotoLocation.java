@@ -7,9 +7,13 @@ import team223.MyConstants;
 import team223.State;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
+import battlecode.common.GameObject;
 import battlecode.common.MapLocation;
 import battlecode.common.MovementType;
+import battlecode.common.Robot;
 import battlecode.common.RobotController;
+import battlecode.common.RobotInfo;
+import battlecode.common.RobotType;
 
 public abstract class GotoLocation extends State {
 
@@ -22,6 +26,10 @@ public abstract class GotoLocation extends State {
 	private List<MapLocation> currentPath;
 	private int currentPathSize=0;
 	private MapLocation destination;
+	
+	private final boolean invokeBeforeMove;
+	
+	private State tempState;
 
 	private final PathFindingResultCallback recalculatePathCallback = new PathFindingResultCallback() {
 
@@ -37,9 +45,10 @@ public abstract class GotoLocation extends State {
 		}
 	};
 
-	public GotoLocation(RobotController rc,List<MapLocation> path,MovementType movementType) 
+	public GotoLocation(RobotController rc,List<MapLocation> path,MovementType movementType,boolean invokeBeforeMove) 
 	{
 		super(rc);
+		this.invokeBeforeMove = invokeBeforeMove;
 		this.movementType = movementType;
 		setNewPath( path );
 	}
@@ -68,12 +77,20 @@ public abstract class GotoLocation extends State {
 		}
 		return null;
 	}	
+	
+	protected State beforeMove() {
+		return null;
+	}
 
 	@Override
 	public final State perform() throws GameActionException 
 	{
+		if ( tempState != null ) {
+			tempState = tempState.perform();
+			return this;
+		}
+		
 		final MapLocation myLocation = rc.getLocation();
-
 		if ( hasArrivedAtDestination( myLocation , destination ) ) {
 			return null;
 		} 
@@ -85,7 +102,21 @@ public abstract class GotoLocation extends State {
 			if ( direction == Direction.OMNI ) {
 				return null;
 			}
-			if ( rc.canMove( direction ) ) 
+			
+			if ( invokeBeforeMove ) 
+			{
+				tempState = beforeMove();
+				if ( tempState != null ) {
+					tempState = tempState.perform();
+					return this;
+				}
+				if ( ! rc.isActive() ) {
+					return this;
+				}
+			}
+			
+			final MapLocation newLocation = myLocation.add( direction );
+			if ( rc.canMove( direction ) )
 			{
 				movementFailureCount=0;				
 				if ( movementType == MovementType.RUN ) {
@@ -97,12 +128,29 @@ public abstract class GotoLocation extends State {
 			else 
 			{
 				movementFailureCount++;
+
 				if ( VERBOSE) System.out.println("Failed to move "+myLocation+" -> "+next+" (count: "+movementFailureCount+")");
+				
+				GameObject object = rc.senseObjectAtLocation( newLocation );
+				if ( object instanceof Robot ) {
+					RobotInfo ri = rc.senseRobotInfo( (Robot) object);
+					if ( ri.team != rc.getTeam() ) 
+					{
+						switch( ri.type ) {
+							case SOLDIER:
+							case PASTR:
+							case NOISETOWER:
+								if ( VERBOSE) System.out.println("Attacking enemy robot "+ri);
+								tempState = new Attacking( rc , (Robot) object , rc.senseEnemyHQLocation() );
+								break;
+						}
+					}
+				}
 
 				if ( movementFailureCount > MyConstants.MAX_PATH_MOVEMENT_FAILURES ) 
 				{
 					// 	movement failed too many times, some new obstacle is blocking us...recalculate path					
-					if ( VERBOSE) System.out.println("Re-calculating path "+myLocation+" -> "+next);						
+					if ( VERBOSE ) System.out.println("Re-calculating path "+myLocation+" -> "+next);						
 					movementFailureCount = 0;
 					return recalculatePath( recalculatePathCallback );
 				}
@@ -110,7 +158,7 @@ public abstract class GotoLocation extends State {
 			return this;
 		} 
 
-		if ( VERBOSE) System.out.println("ERROR: At "+rc.getLocation()+" , no next step on path "+currentPath+" , recalculating path" );
+		if ( VERBOSE) System.out.println("ERROR: At "+myLocation+" , no next step on path "+currentPath+" , recalculating path" );
 		return recalculatePath( recalculatePathCallback );
 	}
 

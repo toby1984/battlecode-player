@@ -1,8 +1,19 @@
 package team223.behaviours;
 
-import team223.*;
+import team223.FastRandom;
+import team223.MyConstants;
+import team223.RobotBehaviour;
+import team223.Utils;
+import team223.Utils.RobotAndInfo;
 import team223.states.Attacking;
-import battlecode.common.*;
+import battlecode.common.Direction;
+import battlecode.common.GameActionException;
+import battlecode.common.GameConstants;
+import battlecode.common.MapLocation;
+import battlecode.common.Robot;
+import battlecode.common.RobotController;
+import battlecode.common.RobotType;
+import battlecode.common.TerrainTile;
 
 public final class HQBehaviour extends RobotBehaviour {
 
@@ -39,12 +50,12 @@ public final class HQBehaviour extends RobotBehaviour {
 		}
 		
 		final Robot[] enemies = Utils.findEnemies( rc , RobotType.HQ.attackRadiusMaxSquared );
-		Robot enemy = Utils.findClosestEnemy( rc , enemies );
+		RobotAndInfo enemy = Utils.findClosestEnemy( rc , enemies );
 		if ( enemy != null ) 
 		{
-			state = new Attacking( rc , enemy , enemyHQLocation );
+			state = new Attacking( rc , enemy.robot, enemyHQLocation , false );
 			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
-			if ( MyConstants.DEBUG_MODE) System.out.println("HQ is attacking #"+enemy.getID());
+			if ( MyConstants.DEBUG_MODE) System.out.println("HQ is attacking #"+enemy.robot.getID());
 			state.perform();
 			return;
 		}

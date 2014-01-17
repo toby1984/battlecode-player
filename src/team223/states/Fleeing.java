@@ -9,14 +9,17 @@ import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.Robot;
 import battlecode.common.RobotController;
+import battlecode.common.RobotType;
 
 public final class Fleeing extends State {
 
 	private FastRandom rnd;
+	private final MapLocation enemyHQ;
 	
-	public Fleeing(RobotController rc,FastRandom rnd) {
+	public Fleeing(RobotController rc,FastRandom rnd,MapLocation enemyHQ) {
 		super(rc);
 		this.rnd=rnd;
+		this.enemyHQ = enemyHQ;
 	}
 	
 	@Override
@@ -37,10 +40,15 @@ public final class Fleeing extends State {
 					} else if ( MyConstants.DEBUG_MODE) System.out.println("No-where to escape?");
 					return this;
 				}
-				for ( int retries = 7 ; retries > 0 ; retries--) {
-					if ( rc.canMove( d ) ) {
-						rc.move( d );
-						return this;
+				
+				for ( int retries = 7 ; retries > 0 ; retries--) 
+				{
+					if ( rc.canMove( d ) ) 
+					{
+						if ( rc.getLocation().distanceSquaredTo( enemyHQ ) > RobotType.HQ.attackRadiusMaxSquared ) {
+							rc.move( d );
+							return this;
+						}
 					}
 					d = d.rotateLeft();
 				}

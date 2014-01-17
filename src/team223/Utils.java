@@ -187,20 +187,37 @@ public class Utils {
 		return list;
 	}
 	
-	public static final Robot findClosestEnemy(RobotController rc,Robot[] nearbyEnemies) throws GameActionException 
+	public static final class RobotAndInfo 
 	{
-		Robot closestRobot=null;
+		public final Robot robot;
+		public final RobotInfo info;
+		private RobotAndInfo(Robot robot, RobotInfo info) {
+			this.robot = robot;
+			this.info = info;
+		}
+	}
+	
+	public static final RobotAndInfo findClosestEnemy(RobotController rc,Robot[] nearbyEnemies) throws GameActionException 
+	{
+		if ( nearbyEnemies.length == 0 ) {
+			return null;
+		}
+		
+		RobotAndInfo closestRobot=null;
 		int closestDistanceSquared=0;
 
 		MapLocation myLocation = rc.getLocation();
-		for ( Robot enemy : nearbyEnemies ) 
+		for ( int i = 0 ; i < nearbyEnemies.length ; i++)
 		{
+			Robot enemy = nearbyEnemies[i];
 			RobotInfo robotInfo = rc.senseRobotInfo( enemy );
-			if (isAttackTarget( robotInfo ) ) 
+			if ( isAttackTarget( robotInfo ) ) 
 			{
 				int distance = robotInfo.location.distanceSquaredTo( myLocation );
-				if ( closestRobot == null || distance < closestDistanceSquared ) {
-					closestRobot = enemy;
+				if ( closestRobot == null || distance < closestDistanceSquared || 
+					 ( closestRobot.info.type !=  RobotType.SOLDIER && robotInfo.type == RobotType.SOLDIER ) ) 
+				{
+					closestRobot = new RobotAndInfo(enemy,robotInfo);
 					closestDistanceSquared = distance;
 				}
 			}

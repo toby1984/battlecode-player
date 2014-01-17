@@ -9,9 +9,12 @@ import team223.FastRandom;
 import team223.MyConstants;
 import team223.State;
 import battlecode.common.GameActionException;
+import battlecode.common.GameObject;
 import battlecode.common.MapLocation;
 import battlecode.common.MovementType;
+import battlecode.common.Robot;
 import battlecode.common.RobotController;
+import battlecode.common.RobotInfo;
 
 public abstract class InterruptibleGotoLocation extends State implements AStar.Callback {
 
@@ -30,10 +33,13 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 	
 	private PathFindingResultCallback callback;
 	
-	public InterruptibleGotoLocation(final RobotController rc,MovementType movementType,FastRandom rnd)
+	private final MapLocation enemyHQ;
+	
+	public InterruptibleGotoLocation(final RobotController rc,MovementType movementType,FastRandom rnd,MapLocation enemyHQ)
 	{
 		super(rc);
 		
+		this.enemyHQ = enemyHQ;
 		this.rnd = rnd;
 		this.rc = rc;
 		this.movementType = movementType;
@@ -93,16 +99,22 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 	{
 		if ( VERBOSE ) System.out.println("Found path , switching to GotoLocation");
 		
-		activeState = new GotoLocation( rc , path , movementType ) {
+		activeState = new GotoLocation( rc , path , movementType , isInvokeBeforeMove() ) {
 
 			@Override
 			protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
 				return InterruptibleGotoLocation.this.hasArrivedAtDestination(current, dstLoc);
 			}
+			
+			@Override
+			protected State beforeMove() {
+				return InterruptibleGotoLocation.this.beforeEachMove();
+			}
 
 			@Override
 			protected State recalculatePath(PathFindingResultCallback callback)
 			{
+				if ( MyConstants.DEBUG_MODE ) System.out.println("Recalculating path");
 				reset();
 				InterruptibleGotoLocation.this.callback = callback;
 				return null; // MUST RETURN NULL since GotoLocation#perform() and NOT the outer "this" InterruptibleGotoLocation instance.
@@ -119,6 +131,14 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 			callback = null;
 			foundPathHook( path );
 		}
+	}
+	
+	protected State beforeEachMove() {
+		return null;
+	}
+	
+	public boolean isInvokeBeforeMove() {
+		return false;
 	}
 
 	@Override
@@ -137,6 +157,7 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 	protected void reset() {
 		activeState = null;
 		finder.reset();
+		setStartAndDestination( finder );
 	}
 
 	@Override
@@ -145,7 +166,9 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 		if ( activeState != null ) 
 		{
 			if ( VERBOSE ) System.out.println("perform( "+activeState+" )");
+			
 			activeState  = activeState.perform();
+			
 			if ( activeState != null ) {
 				return this;
 			}
@@ -183,18 +206,39 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 	
 	public State onLowRobotHealth(double currentRobotHealth) 
 	{
-		return new Fleeing(rc,rnd);
+		return new Fleeing(rc,rnd , enemyHQ );
 	}
 
 	public State onAttack(double currentRobotHealth) 
 	{
 		if ( currentRobotHealth < MyConstants.FLEE_HEALTH ) {
-			return new Fleeing(rc,rnd);
+			return new Fleeing(rc,rnd,enemyHQ);
 		}
 		return new AttackEnemiesInSight(rc);				
 	}		
 
-	public abstract boolean isOccupied(MapLocation loc) throws GameActionException;
+	public boolean isOccupied(MapLocation loc) throws GameActionException 
+	{
+		if ( rc.canSenseSquare(loc) ) 
+		{
+			GameObject object = rc.senseObjectAtLocation( loc );
+			if ( object instanceof Robot) 
+			{
+				RobotInfo robot = rc.senseRobotInfo( (Robot) object );
+				switch( robot.type) {
+					case HQ:
+						return true;
+					case NOISETOWER:
+					case SOLDIER:
+					case PASTR:
+						return robot.team == rc.getTeam();
+					default:
+						return false;
+				}
+			}
+		}
+		return false;
+	}
 
 	protected abstract boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc);	
 

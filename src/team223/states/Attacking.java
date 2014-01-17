@@ -9,11 +9,17 @@ public final class Attacking extends State {
 	private final MapLocation enemyHQLocation;
 	
 	private int movementFailures = 0;
+	private final boolean moveable;
 	
 	public Attacking(RobotController rc,Robot enemy,MapLocation enemyHQLocation) {
+		this(rc,enemy,enemyHQLocation,true);
+	}
+	
+	public Attacking(RobotController rc,Robot enemy,MapLocation enemyHQLocation,boolean moveable) {
 		super(rc);
 		this.enemy=enemy;
 		this.enemyHQLocation = enemyHQLocation;
+		this.moveable = moveable;
 	}
 	
 	@Override
@@ -28,7 +34,8 @@ public final class Attacking extends State {
 		{
 			rc.attackSquare( enemyLocation );
 		} 
-		else {
+		else if ( moveable )
+		{
 			// move towards enemy
 			final MapLocation myLocation = rc.getLocation();				
 			Direction direction = myLocation.directionTo( enemyLocation );

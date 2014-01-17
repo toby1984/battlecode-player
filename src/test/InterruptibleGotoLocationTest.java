@@ -84,7 +84,7 @@ public class InterruptibleGotoLocationTest {
 		
 		final FastRandom rnd = new FastRandom(0xdeadbeef);
 
-		State currentState = new InterruptibleGotoLocation(rc,MovementType.RUN , rnd ) {
+		State currentState = new InterruptibleGotoLocation(rc,MovementType.RUN , rnd , new MapLocation(100,100) ) {
 
 			@Override
 			public boolean isOccupied(MapLocation loc) throws GameActionException 

@@ -4,7 +4,10 @@ import team223.AStar;
 import team223.FastRandom;
 import team223.MyConstants;
 import team223.RobotBehaviour;
+import team223.State;
 import team223.Utils;
+import team223.Utils.RobotAndInfo;
+import team223.states.AttackEnemiesInSight;
 import team223.states.Attacking;
 import team223.states.Fleeing;
 import team223.states.InterruptibleGotoLocation;
@@ -21,6 +24,8 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 	private final FastRandom rnd;
 	
 	protected static final int UNKNOWN_HEALTH= -99999;
+	
+	private boolean checkForEnemiesAtEachStep = true;
 	
 	public DestroyerBehaviour(final RobotController rc,FastRandom random,MapLocation enemyHQLocation) {
 		super(rc,enemyHQLocation);
@@ -45,7 +50,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 			enemies = Utils.findEnemies( rc , RobotType.SOLDIER.attackRadiusMaxSquared );
 			if ( Utils.getEstimatedHealOfThreats( rc , enemies ) >= rc.getHealth() ) 
 			{ 
-				state = new Fleeing( rc , rnd );
+				state = new Fleeing( rc , rnd , enemyHQLocation);
 				if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
 				state = state.perform();
 				return;
@@ -55,35 +60,34 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 		if ( state instanceof Attacking ) {
 			state = state.perform();
 			return;
+		}		
+		
+		if ( state instanceof InterruptibleGotoLocation) {
+			state = state.perform();
+			return;
 		}
 		
 		if ( enemies == null ) {
 			enemies = Utils.findEnemies(rc , MyConstants.SOLDIER_SEEK_ENEMY_RANGE_SQUARED);
 		}
 		
-		Robot closestEnemy = Utils.findClosestEnemy( rc , enemies);
+		final RobotAndInfo closestEnemy = Utils.findClosestEnemy( rc , enemies);
 		if ( closestEnemy != null ) 
 		{
-			state = new Attacking(rc,closestEnemy , enemyHQLocation );
-			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
-			state = state.perform();
-			return;
-		}
-		
-		if ( state instanceof InterruptibleGotoLocation ) {
-			state = state.perform();
-			return;
-		}		
-		
-		// home-in on enemy HQ
-		if ( enemyHQLocation.distanceSquaredTo( rc.getLocation() ) > MyConstants.SOLIDER_HOMEIN_ON_HQ_DISTANCE_SQUARED ) 
-		{
-			state = new InterruptibleGotoLocation(rc , MovementType.RUN,rnd) {
-
-				@Override
-				public boolean isOccupied(MapLocation loc) throws GameActionException {
-					return rc.canSenseSquare( loc ) ? rc.senseObjectAtLocation( loc ) != null : false;							
-				}
+			checkForEnemiesAtEachStep = false;
+			
+			if ( MyConstants.DEBUG_MODE ) { System.out.println("Picked enemy "+closestEnemy.robot ); }	
+			
+			if ( rc.canAttackSquare( closestEnemy.info.location ) ) {
+				state = new Attacking(rc,closestEnemy.robot , enemyHQLocation );
+				if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
+				state = state.perform();
+				return;
+			} 
+			
+			if ( MyConstants.DEBUG_MODE ) { System.out.println("Enemy too far away, calculating path to enemy "+closestEnemy.robot ); }
+			
+			state = new InterruptibleGotoLocation(rc , MovementType.RUN,rnd,enemyHQLocation) {
 
 				@Override
 				protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
@@ -91,6 +95,60 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 					final int dy = Math.abs( dstLoc.y - current.y );
 					return dx <= 1 && dy <= 1;					
 				}
+				
+				@Override
+				public boolean isInvokeBeforeMove() {
+					return checkForEnemiesAtEachStep;
+				}				
+				
+				@Override
+				protected State beforeEachMove() 
+				{
+					Robot[] enemies = Utils.findEnemies(rc , RobotType.SOLDIER.attackRadiusMaxSquared );
+					if ( enemies.length > 0 ) {
+						return new AttackEnemiesInSight(rc);
+					}
+					return null;
+				}
+
+				@Override
+				public boolean setStartAndDestination(AStar finder) 
+				{
+					finder.setRoute( rc.getLocation() , closestEnemy.info.location );
+					return true;
+				}
+			};
+			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }			
+			state = state.perform();
+			return;
+		}
+		
+		// home-in on enemy HQ
+		if ( enemyHQLocation.distanceSquaredTo( rc.getLocation() ) > MyConstants.SOLIDER_HOMEIN_ON_HQ_DISTANCE_SQUARED ) 
+		{
+			state = new InterruptibleGotoLocation(rc , MovementType.RUN,rnd,enemyHQLocation) {
+
+				@Override
+				protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
+					final int dx = Math.abs( dstLoc.x - current.x );
+					final int dy = Math.abs( dstLoc.y - current.y );
+					return dx <= 1 && dy <= 1;					
+				}
+				
+				@Override
+				public boolean isInvokeBeforeMove() {
+					return checkForEnemiesAtEachStep;
+				}
+				
+				@Override
+				protected State beforeEachMove() 
+				{
+					Robot[] enemies = Utils.findEnemies(rc , RobotType.SOLDIER.attackRadiusMaxSquared );
+					if ( enemies.length > 0 ) {
+						return new AttackEnemiesInSight(rc);
+					}
+					return null;
+				}				
 
 				@Override
 				public boolean setStartAndDestination(AStar finder) 
