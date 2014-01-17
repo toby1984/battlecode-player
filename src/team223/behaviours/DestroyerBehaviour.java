@@ -82,7 +82,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 
 				@Override
 				public boolean isOccupied(MapLocation loc) throws GameActionException {
-					return false;
+					return rc.canSenseSquare( loc ) ? rc.senseObjectAtLocation( loc ) != null : false;							
 				}
 
 				@Override
