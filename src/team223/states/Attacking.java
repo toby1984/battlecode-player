@@ -10,13 +10,14 @@ public final class Attacking extends State {
 	
 	private int movementFailures = 0;
 	
-	public Attacking(Robot enemy,MapLocation enemyHQLocation) {
+	public Attacking(RobotController rc,Robot enemy,MapLocation enemyHQLocation) {
+		super(rc);
 		this.enemy=enemy;
 		this.enemyHQLocation = enemyHQLocation;
 	}
 	
 	@Override
-	public State perform(RobotController rc) throws GameActionException 
+	public State perform() throws GameActionException 
 	{
 		if ( ! rc.canSenseObject( enemy ) || enemyIsDead(rc) ) {
 			return null; // either dead or out of sensor range

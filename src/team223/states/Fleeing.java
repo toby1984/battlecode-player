@@ -14,12 +14,13 @@ public final class Fleeing extends State {
 
 	private FastRandom rnd;
 	
-	public Fleeing(FastRandom rnd) {
+	public Fleeing(RobotController rc,FastRandom rnd) {
+		super(rc);
 		this.rnd=rnd;
 	}
 	
 	@Override
-	public State perform(RobotController rc) throws GameActionException 
+	public State perform() throws GameActionException 
 	{
 		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) 
 		{
@@ -43,8 +44,8 @@ public final class Fleeing extends State {
 					}
 					d = d.rotateLeft();
 				}
+				return this;
 			}
-			return this;			
 		}
 		return null;
 	}

@@ -12,7 +12,7 @@ import team223.RobotBehaviour;
 import team223.Utils;
 import team223.states.AttackEnemiesInSight;
 import team223.states.Fleeing;
-import team223.states.GotoLocation;
+import team223.states.InterruptibleGotoLocation;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.GameConstants;
@@ -56,8 +56,6 @@ public final class CowboyBehaviour extends RobotBehaviour {
 	private MapLocation currentDestination;
 
 	private final Team myTeam;
-	
-	private final AStar finder;
 
 	public CowboyBehaviour(final RobotController rc,Team myTeam,FastRandom rnd,MapLocation enemyHQLocation) {
 		super(rc,enemyHQLocation);
@@ -65,19 +63,6 @@ public final class CowboyBehaviour extends RobotBehaviour {
 		this.myTeam = myTeam;
 		final Direction[] candidates = Utils.getMovementCandidateDirections( rc );
 		generalDirection = candidates[ rnd.nextInt( candidates.length ) ];
-		this.finder = new AStar( rc ) {
-
-			@Override
-			protected boolean isCloseEnoughToTarget(PathNode<MapLocation> node) {
-				return node.value.equals( destination );
-			}
-
-			@Override
-			public boolean isOccupied(MapLocation loc) throws GameActionException 
-			{
-				return rc.canSenseSquare( loc ) ? rc.senseObjectAtLocation( loc ) != null : false;						
-			}			
-		};
 	}
 
 	@Override
@@ -156,20 +141,20 @@ public final class CowboyBehaviour extends RobotBehaviour {
 		}
 
 		if ( state instanceof Fleeing ) {
-			state = state.perform(rc);
+			state = state.perform();
 			return;
 		}
 
 		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) {
-			state = new Fleeing(rnd);
-			if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
-			state = state.perform( rc );
+			state = new Fleeing(rc,rnd);
+			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
+			state = state.perform(  );
 			return;
 		}
 
 		if ( state instanceof AttackEnemiesInSight ) 
 		{
-			state = state.perform( rc );
+			state = state.perform();
 			return;
 		}
 
@@ -179,8 +164,8 @@ public final class CowboyBehaviour extends RobotBehaviour {
 			for ( int i = 0 ; i < enemies.length ; i++ ) {
 				RobotInfo ri = rc.senseRobotInfo( enemies[i] );
 				if ( ri.type == RobotType.PASTR || ri.type == RobotType.SOLDIER ) {
-					state = new AttackEnemiesInSight();
-					if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }					
+					state = new AttackEnemiesInSight(rc);
+					if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }					
 					return;
 				}
 			}
@@ -193,10 +178,10 @@ public final class CowboyBehaviour extends RobotBehaviour {
 
 	private boolean pathFindingMode(final RobotController rc) throws GameActionException 
 	{
-		if ( state instanceof GotoLocation) 
+		if ( state instanceof InterruptibleGotoLocation) 
 		{
-			GotoLocation oldState = (GotoLocation) state;
-			state = state.perform(rc);
+			InterruptibleGotoLocation oldState = (InterruptibleGotoLocation) state;
+			state = state.perform();
 			if ( state == null ) { // arrived at destination ?
 				MapLocation currentLoc = rc.getLocation();
 				if ( hasArrivedAtDestination( currentLoc , currentDestination ) ) 
@@ -219,9 +204,8 @@ public final class CowboyBehaviour extends RobotBehaviour {
 				currentDestination = null;
 			}
 			// retry moving to this location
-			if ( gotoLocation( rc , currentDestination ) ) {
-				return true;
-			}
+			gotoLocation( rc , currentDestination );
+			return true;
 		}
 
 		currentDestination = null;
@@ -230,8 +214,8 @@ public final class CowboyBehaviour extends RobotBehaviour {
 			final MapLocation loc = locations[i];
 			if ( loc != null ) 
 			{
-				if ( ! isTerminallyOccupied(loc,rc) && gotoLocation(rc,loc) )
-				{
+				if ( ! isTerminallyOccupied( loc , rc ) ) {
+					gotoLocation(rc,loc);
 					return true;
 				}
 				locations[i]=null; // discard occupied locations
@@ -241,31 +225,30 @@ public final class CowboyBehaviour extends RobotBehaviour {
 		return false;
 	}
 
-	private boolean gotoLocation(final RobotController rc,final MapLocation loc) throws GameActionException 
+	private void gotoLocation(final RobotController rc,final MapLocation loc) throws GameActionException 
 	{
-		List<MapLocation> path = finder.findPath( rc.getLocation() , loc );
-		if ( path != null ) 
-		{
-			if ( VERBOSE ) System.out.println("Moving to pasture location "+loc);
-			currentDestination = loc;
-			state = new GotoLocation( path , MovementType.SNEAK ) {
+		if ( VERBOSE ) System.out.println("Moving to pasture location "+loc);
+		
+		currentDestination = loc;
+		
+		state = new InterruptibleGotoLocation( rc , MovementType.SNEAK , rnd ) {
 
-				@Override
-				protected List<MapLocation> recalculatePath(RobotController rc) throws GameActionException 
-				{
-					return finder.findPath( rc.getLocation() , loc );
-				}
+			@Override
+			protected boolean hasArrivedAtDestination(MapLocation current,MapLocation dstLoc) {
+				return current.equals( dstLoc );
+			}
 
-				@Override
-				protected boolean hasArrivedAtDestination(MapLocation current,MapLocation dstLoc) {
-					return CowboyBehaviour.this.hasArrivedAtDestination( current , dstLoc );
-				}
-			};
-			return true;
-		} 
-		// TODO: Maybe just a temporary path finding failure and thus discarding this location is actually not-too-good
-		if ( VERBOSE ) System.out.println("Failed to find path to "+loc+" , discarding candidate");
-		return false;
+			@Override
+			public boolean isOccupied(MapLocation loc) throws GameActionException {
+				return rc.canSenseSquare( loc ) ? rc.senseObjectAtLocation( loc ) != null : false;					
+			}
+
+			@Override
+			public boolean setStartAndDestination(AStar finder) {
+				finder.setRoute( rc.getLocation() , loc );
+				return true;
+			}
+		};
 	}
 
 	private boolean isTerminallyOccupied(MapLocation loc,RobotController rc) throws GameActionException 

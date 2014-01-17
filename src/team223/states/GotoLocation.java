@@ -2,6 +2,7 @@ package team223.states;
 
 import java.util.List;
 
+import team223.AStar.PathFindingResultCallback;
 import team223.MyConstants;
 import team223.State;
 import battlecode.common.Direction;
@@ -12,29 +13,47 @@ import battlecode.common.RobotController;
 
 public abstract class GotoLocation extends State {
 
+	private static final boolean VERBOSE = false;
+	
 	private final MovementType movementType;
-	
+
 	private int movementFailureCount = 0;
-	
+
 	private List<MapLocation> currentPath;
 	private int currentPathSize=0;
 	private MapLocation destination;
-	
-	public GotoLocation(List<MapLocation> path,MovementType movementType) {
+
+	private final PathFindingResultCallback recalculatePathCallback = new PathFindingResultCallback() {
+
+		@Override
+		public void foundPath(List<MapLocation> path) {
+			if ( VERBOSE ) System.out.println("Recalculating path succeeded.");				
+			setNewPath( path );							
+		}
+
+		@Override
+		public void foundNoPath() {
+			if ( VERBOSE) System.out.println("ERROR: Failed to recalculate path" );									
+		}
+	};
+
+	public GotoLocation(RobotController rc,List<MapLocation> path,MovementType movementType) 
+	{
+		super(rc);
 		this.movementType = movementType;
 		setNewPath( path );
 	}
-	
+
 	public final MapLocation getDestination() {
 		return destination;
 	}
-	
+
 	private void setNewPath(List<MapLocation> path) {
 		currentPath = path;
 		currentPathSize = path.size();
 		destination = path.get( currentPathSize-1 );
 	}
-	
+
 	private MapLocation nextStep(MapLocation current) 
 	{
 		for ( int i = 0 ; i < currentPathSize ; i++ ) 
@@ -49,18 +68,16 @@ public abstract class GotoLocation extends State {
 		}
 		return null;
 	}	
-	
-	protected abstract List<MapLocation> recalculatePath(RobotController rc) throws GameActionException;
-	
+
 	@Override
-	public final State perform(RobotController rc) throws GameActionException 
+	public final State perform() throws GameActionException 
 	{
 		final MapLocation myLocation = rc.getLocation();
-		
+
 		if ( hasArrivedAtDestination( myLocation , destination ) ) {
 			return null;
 		} 
-		
+
 		MapLocation next = nextStep( myLocation );
 		if ( next != null ) 
 		{
@@ -80,39 +97,29 @@ public abstract class GotoLocation extends State {
 			else 
 			{
 				movementFailureCount++;
-				if ( MyConstants.DEBUG_MODE) System.out.println("Failed to move "+myLocation+" -> "+next+" (count: "+movementFailureCount+")");
-				
+				if ( VERBOSE) System.out.println("Failed to move "+myLocation+" -> "+next+" (count: "+movementFailureCount+")");
+
 				if ( movementFailureCount > MyConstants.MAX_PATH_MOVEMENT_FAILURES ) 
 				{
 					// 	movement failed too many times, some new obstacle is blocking us...recalculate path					
-					if ( MyConstants.DEBUG_MODE) System.out.println("Re-calculating path "+myLocation+" -> "+next);						
+					if ( VERBOSE) System.out.println("Re-calculating path "+myLocation+" -> "+next);						
 					movementFailureCount = 0;
-					List<MapLocation> newPath = recalculatePath(rc);
-					if ( newPath == null ) {
-						if ( MyConstants.DEBUG_MODE) System.out.println("ERROR: Failed to recalculate path" );						
-						return null;
-					}
-					setNewPath( newPath );
+					return recalculatePath( recalculatePathCallback );
 				}
 			}
 			return this;
 		} 
-		else {
-			if ( MyConstants.DEBUG_MODE) System.out.println("ERROR: At "+rc.getLocation()+" , no next step on path "+currentPath );
-			
-			List<MapLocation> newPath  = recalculatePath(rc);
-			if ( newPath != null ) {
-				setNewPath( newPath );
-				return this;
-			}
-		}
-		return null;
+
+		if ( VERBOSE) System.out.println("ERROR: At "+rc.getLocation()+" , no next step on path "+currentPath+" , recalculating path" );
+		return recalculatePath( recalculatePathCallback );
 	}
-	
+
+	protected abstract State recalculatePath(PathFindingResultCallback callback);
+
 	protected abstract boolean hasArrivedAtDestination(MapLocation current,MapLocation dstLoc);
-	
-    @Override
-    public String toString() {
-    	return getClass().getName();
-    }	
+
+	@Override
+	public String toString() {
+		return getClass().getName();
+	}	
 }

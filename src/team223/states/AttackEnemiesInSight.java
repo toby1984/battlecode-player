@@ -13,8 +13,12 @@ public final class AttackEnemiesInSight extends State {
 	private int roundCount = 0;
 	private Robot currentEnemy;
 
+	public AttackEnemiesInSight(RobotController rc) {
+		super(rc);
+	}
+	
 	@Override
-	public State perform(RobotController rc) throws GameActionException 
+	public State perform() throws GameActionException 
 	{
 		roundCount++;
 		if ( enemies == null || roundCount > 3 ) {

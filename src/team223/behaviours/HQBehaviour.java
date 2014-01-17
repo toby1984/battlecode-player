@@ -34,7 +34,7 @@ public final class HQBehaviour extends RobotBehaviour {
 		}
 		
 		if ( state instanceof Attacking) {
-			state = state.perform( rc );
+			state = state.perform();
 			return;
 		}
 		
@@ -42,10 +42,10 @@ public final class HQBehaviour extends RobotBehaviour {
 		Robot enemy = Utils.findClosestEnemy( rc , enemies );
 		if ( enemy != null ) 
 		{
-			state = new Attacking( enemy , enemyHQLocation );
-			if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
+			state = new Attacking( rc , enemy , enemyHQLocation );
+			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
 			if ( MyConstants.DEBUG_MODE) System.out.println("HQ is attacking #"+enemy.getID());
-			state.perform( rc );
+			state.perform();
 			return;
 		}
 		

@@ -10,6 +10,7 @@ import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.Stack;
 
+import battlecode.common.Clock;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
@@ -18,6 +19,12 @@ import battlecode.common.TerrainTile;
 
 public abstract class AStar
 {
+	private static final boolean VERBOSE = false;
+	
+	private static final boolean DEBUG_BYTECODES_USED = false;
+	
+    public static final int INTERRUPT_CHECK_INTERVAL = 3;
+    
     // nodes to check
     private final Map<PathNode<MapLocation>,PathNode<MapLocation>> openMap = new HashMap<PathNode<MapLocation>, PathNode<MapLocation>>(2000);
     private final PriorityQueue<PathNode<MapLocation>> openList = new PriorityQueue<PathNode<MapLocation>>(2000);
@@ -29,6 +36,31 @@ public abstract class AStar
     protected MapLocation destination;
     
     private final RobotController rc;
+    
+    private int iterationCount;
+    private PathNode<MapLocation> interruptedNode;
+    
+    private boolean started = false;
+    private boolean finished = false;
+    private boolean aborted = false;
+    
+    private Callback callback;
+    
+    public static enum Result {
+    	INTERRUPT,ABORT,CONTINUE;
+    }
+    
+    public interface PathFindingResultCallback 
+    {
+    	public void foundPath(List<MapLocation> path);
+    	
+    	public void foundNoPath();    	
+    }
+    
+    public interface Callback extends  PathFindingResultCallback
+    {
+    	public Result checkInterrupt();
+    }
     
     public final static class PathNode<V> implements Comparable<PathNode<V>>
     {
@@ -153,41 +185,126 @@ public abstract class AStar
 		this.rc = rc;
 	}
 	
-    public List<MapLocation> findPath(MapLocation from,MapLocation to) throws GameActionException 
-    {
-		if ( MyConstants.DEBUG_MODE) System.out.println("Looking for path from "+from+" to "+to);
+	public boolean isInterrupted() {
+		return interruptedNode != null;
+	}
+	
+	public boolean isFinished() {
+		return finished;
+	}
+	
+	public boolean isStarted() {
+		return started;
+	}
+	
+	public boolean isAborted() {
+		return aborted;
+	}
+	
+	public void continueFindPath() throws GameActionException 
+	{
+		if ( interruptedNode == null || ! started || finished || aborted ) {
+			throw new IllegalStateException("Cannot continue (interrupted: "+isInterrupted()+" , started: "+started+" , finished: "+finished+" , aborted: "+aborted);
+		}
 		
-        if ( from.equals(  to ) ) { // trivial case
-        	List<MapLocation> result = new ArrayList<MapLocation>();
-        	result.add( from );
-        	result.add( to );
-            return result;
-        }
+    	PathNode<MapLocation> current = interruptedNode;
+		interruptedNode = null;    		
+		mainLoop(current);
+		return;		
+	}
+	
+	public void setRoute(MapLocation from,MapLocation to) {
+		this.start = from;
+		this.destination = to;
+	}
+	
+	public void reset() 
+	{
+		if ( MyConstants.DEBUG_MODE) System.out.println("Path finder "+start+" -> "+destination+" reset.");
+		
+    	iterationCount = INTERRUPT_CHECK_INTERVAL; 
+    	interruptedNode = null;
+    	aborted = false;
+        finished = false;
+        started = false;	
         
     	openMap.clear();
     	openList.clear();
-    	closeList.clear();
+    	closeList.clear();        
+	}
+	
+    public void findPath(Callback callback) throws GameActionException 
+    {
+    	if ( isFinished() || isStarted() ) {
+    		throw new IllegalStateException("You need to call reset() before starting a new search");
+    	}
     	
-    	this.start = from;
-    	this.destination = to;
+    	reset();
     	
-    	final PathNode<MapLocation> start = new PathNode<MapLocation>( from );
-    	
-        openMap.clear();
-        openList.clear();
-        closeList.clear();
-
-        assignCost( start );
+        started = true;
+        this.callback = callback;
         
+		if ( MyConstants.DEBUG_MODE) System.out.println("Looking for path from "+this.start+" to "+this.destination);
+		
+        if ( this.start.equals(  this.destination ) ) { // trivial case
+        	List<MapLocation> result = new ArrayList<MapLocation>();
+        	result.add( this.start );
+        	result.add( this.destination );
+        	
+        	searchFinished( result );
+            return;
+        }
+    	
+    	final PathNode<MapLocation> start = new PathNode<MapLocation>( this.start );
+    	
+        assignCost( start );
         closeList.add( start );
 
-        PathNode<MapLocation> current = start;
+		if ( VERBOSE ) System.out.println("Starting search "+this.start+" -> "+this.destination);
+        mainLoop( start );
+    }
+    
+    private final void searchFinished( List<MapLocation> result ) {
+    	finished = true;
+    	interruptedNode = null;
+    	
+    	if ( result != null ) {
+			if ( VERBOSE ) {
+				System.out.println("Search finished , result: "+result);
+			}
+    		callback.foundPath( result );
+    	} 
+    	else 
+    	{
+			if ( VERBOSE ) {
+				System.out.println("Search failed.");
+			}
+    		callback.foundNoPath();
+    	}
+    }
+    
+    private int byteCodesUsed = 0;
+    private int currentRound = 0;
+    private int missedRounds = 0;
+    
+    private void mainLoop(PathNode<MapLocation> current) throws GameActionException 
+    {
+		if ( VERBOSE ) {
+			System.out.println("Continueing/starting search at node "+current);
+		}
+		
+		if ( DEBUG_BYTECODES_USED ) {
+			currentRound = Clock.getRoundNum();
+			byteCodesUsed = Clock.getBytecodeNum();
+		}
+		
         while ( true ) 
         {
         	scheduleNeighbors( current );
 
             if ( openList.isEmpty() ) {
-                return null;
+            	searchFinished(null);
+                return;
             }
 
             PathNode<MapLocation> cheapestPath = openList.remove();
@@ -200,14 +317,51 @@ public abstract class AStar
         			cheapestPath = cheapestPath.parent;
         		} while ( cheapestPath != null );
         		Collections.reverse( result );
-        		return result;            	
+        		
+        		searchFinished( result );
+        		return;            	
             }            
             
             openMap.remove( cheapestPath );
             closeList.add( cheapestPath );  
             
             current = cheapestPath;
-        }
+            
+        	if ( --iterationCount <= 0 ) 
+        	{
+        		if ( DEBUG_BYTECODES_USED ) {
+        			int newRound = Clock.getRoundNum();
+        			int newByteCodesUsed = Clock.getBytecodeNum();
+        			if ( newRound == currentRound ) {
+        				System.out.println("checkInterrupt() after "+(newByteCodesUsed-byteCodesUsed)+" bytecodes (missed rounds: "+missedRounds+")");
+        				missedRounds = 0;
+        			} else {
+        				missedRounds++;
+        			}
+        			currentRound = newRound;
+        			byteCodesUsed = newByteCodesUsed;
+        		}        		
+        		
+        		iterationCount = INTERRUPT_CHECK_INTERVAL;    
+        		switch( callback.checkInterrupt() ) 
+        		{
+        			case ABORT:
+        				if ( VERBOSE ) {
+        					System.out.println("Aborted at node "+current);
+        				}        				
+        				finished = true;
+        				aborted = true;
+        				interruptedNode = null;
+        				return;
+        			case INTERRUPT:
+        				if ( VERBOSE ) {
+        					System.out.println("Interruped at node "+current);
+        				}
+        				interruptedNode = current;
+        				return;
+        		}
+        	}            
+        }    	
     }
     
     protected abstract boolean isCloseEnoughToTarget( PathNode<MapLocation> node ); 
@@ -219,6 +373,14 @@ public abstract class AStar
         current.f( movementCost + estimatedCost );
         current.g( movementCost );
     }
+    
+    public MapLocation getStart() {
+		return start;
+	}
+    
+    public MapLocation getDestination() {
+		return destination;
+	}
 
 	private final float calcMovementCost(team223.AStar.PathNode<MapLocation> current) 
 	{

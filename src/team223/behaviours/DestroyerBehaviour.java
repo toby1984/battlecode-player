@@ -1,35 +1,30 @@
 package team223.behaviours;
 
-import java.util.List;
-
-import team223.*;
+import team223.AStar;
+import team223.FastRandom;
+import team223.MyConstants;
+import team223.RobotBehaviour;
+import team223.Utils;
 import team223.states.Attacking;
 import team223.states.Fleeing;
-import team223.states.GotoLocation;
-import battlecode.common.*;
+import team223.states.InterruptibleGotoLocation;
+import battlecode.common.Direction;
+import battlecode.common.GameActionException;
+import battlecode.common.MapLocation;
+import battlecode.common.MovementType;
+import battlecode.common.Robot;
+import battlecode.common.RobotController;
+import battlecode.common.RobotType;
 
 public final class DestroyerBehaviour extends RobotBehaviour {
 
 	private final FastRandom rnd;
 	
-	private final AStar finder;
+	protected static final int UNKNOWN_HEALTH= -99999;
 	
 	public DestroyerBehaviour(final RobotController rc,FastRandom random,MapLocation enemyHQLocation) {
 		super(rc,enemyHQLocation);
 		this.rnd = random;
-    	this.finder = new AStar(rc) 
-    	{
-			@Override
-			protected boolean isCloseEnoughToTarget(team223.AStar.PathNode<MapLocation> node) 
-			{
-				return hasArrivedAtDestination( node.value , destination );
-			}
-
-			@Override
-			public boolean isOccupied(MapLocation loc) throws GameActionException {
-				return false;
-			}
-		};		
 	}
 	
 	@Override
@@ -40,7 +35,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 		}
 		
 		if ( state instanceof Fleeing ) {
-			state = state.perform( rc );
+			state = state.perform();
 			return;
 		} 
 		
@@ -50,15 +45,15 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 			enemies = Utils.findEnemies( rc , RobotType.SOLDIER.attackRadiusMaxSquared );
 			if ( Utils.getEstimatedHealOfThreats( rc , enemies ) >= rc.getHealth() ) 
 			{ 
-				state = new Fleeing( rnd );
-				if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
-				state = state.perform( rc );
+				state = new Fleeing( rc , rnd );
+				if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
+				state = state.perform();
 				return;
 			}
 		}
 		
 		if ( state instanceof Attacking ) {
-			state = state.perform( rc );
+			state = state.perform();
 			return;
 		}
 		
@@ -69,41 +64,50 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 		Robot closestEnemy = Utils.findClosestEnemy( rc , enemies);
 		if ( closestEnemy != null ) 
 		{
-			state = new Attacking(closestEnemy , enemyHQLocation );
-			if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
-			state = state.perform( rc );
+			state = new Attacking(rc,closestEnemy , enemyHQLocation );
+			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
+			state = state.perform();
 			return;
 		}
 		
-		if ( state instanceof GotoLocation ) {
-			state = state.perform( rc );
+		if ( state instanceof InterruptibleGotoLocation ) {
+			state = state.perform();
 			return;
 		}		
 		
 		// home-in on enemy HQ
 		if ( enemyHQLocation.distanceSquaredTo( rc.getLocation() ) > MyConstants.SOLIDER_HOMEIN_ON_HQ_DISTANCE_SQUARED ) 
 		{
-			List<MapLocation> path = findPathToHQ( rc );
-			if ( path != null ) {
-				state = new GotoLocation( path , MovementType.RUN) {
+			state = new InterruptibleGotoLocation(rc , MovementType.RUN,rnd) {
 
-					@Override
-					protected List<MapLocation> recalculatePath(RobotController rc) throws GameActionException {
-						
-						return findPathToHQ(rc);
-					}
+				@Override
+				public boolean isOccupied(MapLocation loc) throws GameActionException {
+					return false;
+				}
 
-					@Override
-					protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) 
-					{
-						return DestroyerBehaviour.this.hasArrivedAtDestination( current,dstLoc );
+				@Override
+				protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
+					final int dx = Math.abs( dstLoc.x - current.x );
+					final int dy = Math.abs( dstLoc.y - current.y );
+					return dx <= 1 && dy <= 1;					
+				}
+
+				@Override
+				public boolean setStartAndDestination(AStar finder) 
+				{
+					MapLocation dst = Utils.findRandomLocationNear( rc , enemyHQLocation , 
+							MyConstants.ENEMY_HQ_SAFE_DISTANCE ,  
+							MyConstants.ENEMY_HQ_SAFE_DISTANCE*2, rnd );
+					if ( dst != null ) {
+						finder.setRoute( rc.getLocation() , dst );
+						return true;
 					}
-				};
-				if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
-				state = state.perform(rc);
-				return;
-			} 
-			if ( MyConstants.DEBUG_MODE ) System.out.println("ERROR: No path to HQ ?");
+					return false;
+				}
+			};
+			
+			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
+			state = state.perform();
 		} 
 		else 
 		{
@@ -116,23 +120,6 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 		}
 	}
 	
-	protected boolean hasArrivedAtDestination(MapLocation current,MapLocation dstLoc) 
-	{
-		final int dx = Math.abs( dstLoc.x - current.x );
-		final int dy = Math.abs( dstLoc.y - current.y );
-		return dx <= 1 && dy <= 1;
-	}
-	
-	protected List<MapLocation> findPathToHQ(RobotController rc) throws GameActionException {
-		MapLocation dst = Utils.findRandomLocationNear( rc , enemyHQLocation , 
-				MyConstants.ENEMY_HQ_SAFE_DISTANCE ,  
-				MyConstants.ENEMY_HQ_SAFE_DISTANCE*2, rnd );
-		if ( dst != null ) {
-			return finder.findPath( rc.getLocation() , dst );
-		}
-		return null;
-	}
-
 	@Override
 	public String toString() {
 		return "Destroyer";

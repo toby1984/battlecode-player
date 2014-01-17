@@ -1,12 +1,18 @@
 package team223.behaviours;
 
-import java.util.List;
-
-import team223.*;
+import team223.AStar;
+import team223.FastRandom;
+import team223.MyConstants;
+import team223.RobotBehaviour;
 import team223.states.AttackEnemiesInSight;
 import team223.states.Fleeing;
-import team223.states.GotoLocation;
-import battlecode.common.*;
+import team223.states.InterruptibleGotoLocation;
+import battlecode.common.Direction;
+import battlecode.common.GameActionException;
+import battlecode.common.MapLocation;
+import battlecode.common.MovementType;
+import battlecode.common.RobotController;
+import battlecode.common.RobotType;
 
 public final class PastureDestroyerBehaviour extends RobotBehaviour {
 
@@ -17,25 +23,10 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 
 	private final FastRandom rnd;
 	
-	private final AStar finder;
-	
-	public PastureDestroyerBehaviour(final RobotController rc, FastRandom rnd , MapLocation enemyHQLocation) {
+	public PastureDestroyerBehaviour(final RobotController rc, FastRandom rnd , MapLocation enemyHQLocation) 
+	{
 		super(rc,enemyHQLocation);
 		this.rnd=rnd;
-		this.finder = new AStar(rc) {
-			
-			@Override
-			protected boolean isCloseEnoughToTarget(PathNode<MapLocation> node) 
-			{
-				return hasArrivedAtDestination( node.value , destination );
-			}
-			
-			@Override
-			public boolean isOccupied(MapLocation loc) throws GameActionException 
-			{
-				return rc.canSenseSquare( loc ) ? rc.senseObjectAtLocation( loc ) != null : false;
-			}
-		};		
 	}
 	
 	@Override
@@ -48,35 +39,35 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 		
 		if ( state instanceof Fleeing ) 
 		{
-			state = state.perform( rc );
+			state = state.perform();
 			return;
 		} 
 		
 		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) {
-			state = new Fleeing( rnd );
-			if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }			
-			state = state.perform( rc );
+			state = new Fleeing( rc , rnd );
+			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }			
+			state = state.perform();
 			return;
 		}
 
 		if ( state instanceof AttackEnemiesInSight ) {
-			state = state.perform( rc );
+			state = state.perform();
 			return;
 		}
 		
-		if ( state instanceof GotoLocation ) 
+		if ( state instanceof InterruptibleGotoLocation ) 
 		{
-			GotoLocation oldState = (GotoLocation) state;
+			InterruptibleGotoLocation oldState = (InterruptibleGotoLocation) state;
 			if ( VERBOSE ) System.out.println("Moving towards "+oldState.getDestination() );
-			state = state.perform(rc);
+			state = state.perform();
 			if ( state == null ) 
 			{
 				// destination reached
 				int dist = rc.getLocation().distanceSquaredTo( oldState.getDestination() );
 				if ( VERBOSE ) System.out.println("Pasture destroyer is at "+rc.getLocation()+" and thus reached designated target location "+oldState.getDestination()+" (dist: "+dist+", required: "+
 				RobotType.SOLDIER.attackRadiusMaxSquared);
-				state = new AttackEnemiesInSight();
-				if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
+				state = new AttackEnemiesInSight(rc);
+				if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
 			}
 			return;			
 		}
@@ -91,7 +82,7 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 			}
 			
 			if ( MyConstants.DEBUG_MODE ) System.out.println("Pastures found: "+pastrLocations.length);
-			MapLocation myLocation = rc.getLocation();
+			final MapLocation myLocation = rc.getLocation();
 			
 			while(true) 
 			{
@@ -103,8 +94,8 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 				
 				if ( rc.canAttackSquare( target ) ) {
 					if ( MyConstants.DEBUG_MODE) System.out.println("Attacking pastures (enemies) in sight , available target: "+target);					
-					state = new AttackEnemiesInSight();
-					if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
+					state = new AttackEnemiesInSight(rc);
+					if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
 					return;
 				} 
 				else  
@@ -115,8 +106,8 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 						if ( distanceSquared <= RobotType.SOLDIER.attackRadiusMaxSquared ) {
 							if ( VERBOSE ) System.out.println("Sneaking to "+myLocation.add( d )+" of target "+target+" brings me to distance "+distanceSquared);							
 							rc.sneak( d );
-							state = new AttackEnemiesInSight();
-							if ( MyConstants.DEBUG_MODE ) { changedBehaviour(rc); }
+							state = new AttackEnemiesInSight(rc);
+							if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
 							return;
 						}
 					}
@@ -126,30 +117,27 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 				if ( MyConstants.DEBUG_MODE) {
 					System.out.println("Calculating path to closest pasture "+target);
 				}
-				final List<MapLocation> path = finder.findPath( myLocation , target );
-				if ( path != null ) 
-				{
-					if ( MyConstants.DEBUG_MODE) System.out.println("Pasture destroyer found path to "+target);							
-					state = new GotoLocation( path , MovementType.RUN ) {
+					
+				state = new InterruptibleGotoLocation( rc , MovementType.RUN , rnd ) {
 
-						@Override
-						protected List<MapLocation> recalculatePath(RobotController rc) throws GameActionException {
-							return finder.findPath( rc.getLocation() , target );
-						}
-						
-						@Override
-						protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
-							return PastureDestroyerBehaviour.this.hasArrivedAtDestination( current , dstLoc );
-						}
-					};
-					if ( MyConstants.DEBUG_MODE ) {
-						System.out.println("State is now: "+state.getClass().getName());
-						changedBehaviour(rc); 
+					@Override
+					protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
+						return current.distanceSquaredTo( dstLoc ) <= RobotType.SOLDIER.attackRadiusMaxSquared*0.5f;							
 					}
-					break;
-				} else if ( MyConstants.DEBUG_MODE) {
-					if ( MyConstants.DEBUG_MODE) System.out.println("Failed to find path to closest pasture");						
-				}
+
+					@Override
+					public boolean isOccupied(MapLocation loc) throws GameActionException {
+						return rc.canSenseSquare( loc ) ? rc.senseObjectAtLocation( loc ) != null : false;
+					}
+
+					@Override
+					public boolean setStartAndDestination(AStar finder) {
+						finder.setRoute( myLocation , target );
+						return true;
+					}
+				};
+				if ( MyConstants.DEBUG_MODE ) behaviourStateChanged(); 
+				state = state.perform();
 			} 
 		}
 	}
@@ -178,9 +166,5 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 			}			
 		}
 		return null;
- 	}
-	
-	protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
-		return current.distanceSquaredTo( dstLoc ) <= RobotType.SOLDIER.attackRadiusMaxSquared*0.5f;							
-	}	
+ 	}	
 }

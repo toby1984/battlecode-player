@@ -5,5 +5,11 @@ import battlecode.common.RobotController;
 
 public abstract class State {
 
-	public abstract State perform(RobotController rc) throws GameActionException ;
+	protected final RobotController rc;
+	
+	public State(RobotController rc) {
+		this.rc = rc;
+	}
+	
+	public abstract State perform() throws GameActionException ;
 }

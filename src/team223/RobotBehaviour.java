@@ -36,7 +36,7 @@ public abstract class RobotBehaviour {
 		rc.setIndicatorString(1 , text );		
 	}
 	
-	public final void changedBehaviour(RobotController rc) {
+	public final void behaviourStateChanged() {
 		String text;		
 		if ( state == null ) {
 			text = "(*) State change: <NONE>";
