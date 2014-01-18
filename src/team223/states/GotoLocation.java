@@ -140,7 +140,7 @@ public abstract class GotoLocation extends State {
 							case PASTR:
 							case NOISETOWER:
 								if ( VERBOSE) System.out.println("Attacking enemy robot "+ri);
-								tempState = new Attacking( rc , (Robot) object , rc.senseEnemyHQLocation() );
+								tempState = new Attacking( rc , (Robot) object );
 								break;
 						}
 					}

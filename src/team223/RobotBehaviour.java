@@ -1,25 +1,22 @@
 package team223;
 
 import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 
 public abstract class RobotBehaviour {
 
 	protected volatile State state;
 	
-	protected final MapLocation enemyHQLocation;
 	protected final RobotController rc;
 	
-	public static final RobotBehaviour NOP_BEHAVIOUR = new RobotBehaviour(null,null) {
+	public static final RobotBehaviour NOP_BEHAVIOUR = new RobotBehaviour(null) {
 		
 		@Override
 		public void perform() throws GameActionException {
 		}
 	};
 	
-	public RobotBehaviour(RobotController rc, MapLocation enemyHQLocation) {
-		this.enemyHQLocation = enemyHQLocation;
+	public RobotBehaviour(RobotController rc) {
 		this.rc = rc;
 	}
 	

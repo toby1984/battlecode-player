@@ -13,8 +13,6 @@ public final class AttackEnemiesInSight extends State {
 
 	private static final boolean VERBOSE = false;
 	
-	private Robot[] enemies;
-
 	private State activeState;
 
 	public AttackEnemiesInSight(RobotController rc) {
@@ -29,13 +27,14 @@ public final class AttackEnemiesInSight extends State {
 			return this;
 		}
 		
-		enemies = rc.senseNearbyGameObjects(Robot.class , rc.getLocation() , RobotType.SOLDIER.attackRadiusMaxSquared , rc.getTeam().opponent() );
+		Robot[] enemies = rc.senseNearbyGameObjects(Robot.class , rc.getLocation() , RobotType.SOLDIER.attackRadiusMaxSquared , rc.getTeam().opponent() );
+		
 		if ( VERBOSE ) System.out.println("Sensed "+enemies.length+" enemies in attack range");			
 		if ( MyConstants.DEBUG_MODE) System.out.println("AttackEnemiesInSight - sensed "+enemies.length+" enemies around "+rc.getLocation());
 		
 		RobotAndInfo currentEnemy = Utils.pickEnemyToAttack( rc , enemies );		
 		if ( currentEnemy != null ) {
-			activeState = new Attacking( rc , currentEnemy.robot , rc.senseEnemyHQLocation() , false );
+			activeState = new Attacking( rc , currentEnemy.robot , false );
 			activeState = activeState.perform();
 			return this;
 		}

@@ -9,6 +9,7 @@ import team223.AStar;
 import team223.FastRandom;
 import team223.MyConstants;
 import team223.RobotBehaviour;
+import team223.RobotPlayer;
 import team223.Utils;
 import team223.states.AttackEnemiesInSight;
 import team223.states.Fleeing;
@@ -27,8 +28,6 @@ import battlecode.common.RobotType;
 import battlecode.common.Team;
 
 public final class CowboyBehaviour extends RobotBehaviour {
-
-	private final FastRandom rnd;
 
 	private static final boolean VERBOSE = false;
 
@@ -56,14 +55,10 @@ public final class CowboyBehaviour extends RobotBehaviour {
 
 	private MapLocation currentDestination;
 
-	private final Team myTeam;
-
-	public CowboyBehaviour(final RobotController rc,Team myTeam,FastRandom rnd,MapLocation enemyHQLocation) {
-		super(rc,enemyHQLocation);
-		this.rnd=rnd;
-		this.myTeam = myTeam;
+	public CowboyBehaviour(final RobotController rc) {
+		super(rc);
 		final Direction[] candidates = Utils.getMovementCandidateDirections( rc );
-		generalDirection = candidates[ rnd.nextInt( candidates.length ) ];
+		generalDirection = candidates[ RobotPlayer.rnd.nextInt( candidates.length ) ];
 	}
 
 	@Override
@@ -103,7 +98,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 					if ( sum >= MIN_POPULATED_TILES_IN_PASTR_RANGE ) 
 					{
 						MapLocation loc = new MapLocation(x,y);
-						if ( loc.distanceSquaredTo( enemyHQLocation ) > minDistanceToHQ ) 
+						if ( loc.distanceSquaredTo( RobotPlayer.enemyHQ ) > minDistanceToHQ ) 
 						{
 							candidates.add( loc );
 						}
@@ -134,7 +129,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 			} else {
 				this.locations = candidates.toArray( new MapLocation[candidates.size()] );
 			}
-			Utils.shuffle( this.locations , rnd );				
+			Utils.shuffle( this.locations );				
 		}
 
 		if ( ! rc.isActive() || rc.getType() == RobotType.PASTR ) {
@@ -147,7 +142,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 		}
 
 		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) {
-			state = new Fleeing(rc,rnd,enemyHQLocation);
+			state = new Fleeing(rc);
 			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
 			state = state.perform(  );
 			return;
@@ -233,7 +228,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 		
 		currentDestination = loc;
 		
-		state = new InterruptibleGotoLocation( rc , MovementType.SNEAK , rnd , enemyHQLocation) {
+		state = new InterruptibleGotoLocation( rc , MovementType.SNEAK ) {
 
 			@Override
 			protected boolean hasArrivedAtDestination(MapLocation current,MapLocation dstLoc) {
@@ -269,7 +264,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 			boolean isOccupied = obj != null;
 			if ( obj instanceof Robot) {
 				RobotInfo ri = rc.senseRobotInfo( (Robot) obj);
-				if ( ri.team == myTeam) { 
+				if ( ri.team == RobotPlayer.myTeam) { 
 					isOccupied = ri.type != RobotType.SOLDIER;
 				} else {
 					isOccupied = false; // treat as not occupied, we'll kill whatever stands in our way
@@ -331,7 +326,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 		Direction d = generalDirection;
 		Direction toMove = null;
 		if ( ( roundCount % 10 ) == 0 ) {
-			Direction newD = Utils.randomMovementDirection(rnd,rc);
+			Direction newD = Utils.randomMovementDirection(rc);
 			if ( newD != Direction.NONE ) {
 				generalDirection = newD;
 				d=newD;
@@ -344,7 +339,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 			if ( ! rc.canMove( d ) ) {
 				d = generalDirection.rotateRight();
 				if ( ! rc.canMove( d ) ) {
-					d = Utils.randomMovementDirection(rnd,rc);	
+					d = Utils.randomMovementDirection(rc);	
 					if ( d != Direction.NONE ) {
 						toMove=d;
 						generalDirection=d;

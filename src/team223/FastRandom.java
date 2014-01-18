@@ -20,7 +20,7 @@ package team223;
  * {@code protected} utility method that on each invocation can supply
  * up to 32 pseudorandomly generated bits.
  * <p>
- * Many applications will find the method {@link Math#random} simpler to use.
+ * Many applications will find the method {@link Math#rnd} simpler to use.
  *
  * <p>Instances of {@code java.util.Random} are threadsafe.
  * However, the concurrent use of the same {@code java.util.Random}
@@ -408,7 +408,7 @@ public final class FastRandom
      * @return the next pseudorandom, uniformly distributed {@code double}
      *         value between {@code 0.0} and {@code 1.0} from this
      *         random number generator's sequence
-     * @see Math#random
+     * @see Math#rnd
      */
     public double nextDouble() {
         return (((long)(next(26)) << 27) + next(27))

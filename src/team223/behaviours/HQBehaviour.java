@@ -3,6 +3,7 @@ package team223.behaviours;
 import team223.FastRandom;
 import team223.MyConstants;
 import team223.RobotBehaviour;
+import team223.RobotPlayer;
 import team223.Utils;
 import team223.Utils.RobotAndInfo;
 import team223.states.Attacking;
@@ -17,8 +18,6 @@ import battlecode.common.TerrainTile;
 
 public final class HQBehaviour extends RobotBehaviour {
 
-	private final FastRandom rnd;
-	
 	private static final boolean VERBOSE = MyConstants.DEBUG_MODE;
 	
 	public static final int SPAWN_DESTROYER = 1;
@@ -31,9 +30,8 @@ public final class HQBehaviour extends RobotBehaviour {
 	private static int pastureDestroyerCount=0;
 	private static int cowboyCount=0;
 	
-	public HQBehaviour(RobotController rc,FastRandom rnd,MapLocation enemyHQLocation) {
-		super(rc,enemyHQLocation);
-		this.rnd=rnd;
+	public HQBehaviour(RobotController rc) {
+		super(rc);
 	}
 	
 	@Override
@@ -53,7 +51,7 @@ public final class HQBehaviour extends RobotBehaviour {
 		RobotAndInfo enemy = Utils.pickEnemyToAttack( rc , enemies );
 		if ( enemy != null ) 
 		{
-			state = new Attacking( rc , enemy.robot, enemyHQLocation , false );
+			state = new Attacking( rc , enemy.robot, false );
 			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
 			if ( MyConstants.DEBUG_MODE) System.out.println("HQ is attacking #"+enemy.robot.getID());
 			state.perform();
@@ -65,7 +63,7 @@ public final class HQBehaviour extends RobotBehaviour {
 			// spawn robot at random location
 			for ( int retry = 4 ; retry > 0 ; retry-- ) 
 			{
-				Direction direction = Utils.randomDirection(rnd);
+				Direction direction = Utils.randomDirection();
 				MapLocation loc = rc.getLocation().add( direction );
 				TerrainTile tileType = rc.senseTerrainTile( loc );
 				if ( ( tileType == TerrainTile.NORMAL || tileType == TerrainTile.ROAD)  && rc.senseObjectAtLocation( loc ) == null) 

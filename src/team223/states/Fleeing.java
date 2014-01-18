@@ -1,7 +1,7 @@
 package team223.states;
 
-import team223.FastRandom;
 import team223.MyConstants;
+import team223.RobotPlayer;
 import team223.State;
 import team223.Utils;
 import battlecode.common.Direction;
@@ -13,13 +13,8 @@ import battlecode.common.RobotType;
 
 public final class Fleeing extends State {
 
-	private FastRandom rnd;
-	private final MapLocation enemyHQ;
-	
-	public Fleeing(RobotController rc,FastRandom rnd,MapLocation enemyHQ) {
+	public Fleeing(RobotController rc) {
 		super(rc);
-		this.rnd=rnd;
-		this.enemyHQ = enemyHQ;
 	}
 	
 	@Override
@@ -33,7 +28,7 @@ public final class Fleeing extends State {
 			{
 				Direction d = rc.getLocation().directionTo( centerOfMass ).opposite();
 				if ( d == Direction.OMNI ) { // we're at the center of mass, any direction is better than being here
-					d = Utils.randomMovementDirection( rnd , rc );
+					d = Utils.randomMovementDirection( rc );
 					if ( d != Direction.NONE ) 
 					{
 						rc.move(d);
@@ -45,7 +40,7 @@ public final class Fleeing extends State {
 				{
 					if ( rc.canMove( d ) ) 
 					{
-						if ( rc.getLocation().distanceSquaredTo( enemyHQ ) > RobotType.HQ.attackRadiusMaxSquared ) {
+						if ( rc.getLocation().distanceSquaredTo( RobotPlayer.enemyHQ ) > RobotType.HQ.attackRadiusMaxSquared ) {
 							rc.move( d );
 							return this;
 						}

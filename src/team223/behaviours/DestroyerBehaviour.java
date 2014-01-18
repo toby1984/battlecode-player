@@ -4,6 +4,7 @@ import team223.AStar;
 import team223.FastRandom;
 import team223.MyConstants;
 import team223.RobotBehaviour;
+import team223.RobotPlayer;
 import team223.State;
 import team223.Utils;
 import team223.Utils.RobotAndInfo;
@@ -21,15 +22,12 @@ import battlecode.common.RobotType;
 
 public final class DestroyerBehaviour extends RobotBehaviour {
 
-	private final FastRandom rnd;
-	
 	protected static final int UNKNOWN_HEALTH= -99999;
 	
 	private boolean checkForEnemiesAtEachStep = true;
 	
-	public DestroyerBehaviour(final RobotController rc,FastRandom random,MapLocation enemyHQLocation) {
-		super(rc,enemyHQLocation);
-		this.rnd = random;
+	public DestroyerBehaviour(final RobotController rc) {
+		super(rc);
 	}
 	
 	@Override
@@ -50,7 +48,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 			enemies = Utils.findEnemies( rc , RobotType.SOLDIER.attackRadiusMaxSquared );
 			if ( Utils.getEstimatedHealOfThreats( rc , enemies ) >= rc.getHealth() ) 
 			{ 
-				state = new Fleeing( rc , rnd , enemyHQLocation);
+				state = new Fleeing( rc );
 				if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
 				state = state.perform();
 				return;
@@ -79,7 +77,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 			if ( MyConstants.DEBUG_MODE ) { System.out.println("Picked enemy "+closestEnemy.robot ); }	
 			
 			if ( rc.canAttackSquare( closestEnemy.info.location ) ) {
-				state = new Attacking(rc,closestEnemy.robot , enemyHQLocation );
+				state = new Attacking(rc,closestEnemy.robot );
 				if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
 				state = state.perform();
 				return;
@@ -87,7 +85,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 			
 			if ( MyConstants.DEBUG_MODE ) { System.out.println("Enemy too far away, calculating path to enemy "+closestEnemy.robot ); }
 			
-			state = new InterruptibleGotoLocation(rc , MovementType.RUN,rnd,enemyHQLocation) {
+			state = new InterruptibleGotoLocation(rc , MovementType.RUN) {
 
 				@Override
 				protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
@@ -124,9 +122,9 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 		}
 		
 		// home-in on enemy HQ
-		if ( enemyHQLocation.distanceSquaredTo( rc.getLocation() ) > MyConstants.SOLIDER_HOMEIN_ON_HQ_DISTANCE_SQUARED ) 
+		if ( RobotPlayer.enemyHQ.distanceSquaredTo( rc.getLocation() ) > MyConstants.SOLIDER_HOMEIN_ON_HQ_DISTANCE_SQUARED ) 
 		{
-			state = new InterruptibleGotoLocation(rc , MovementType.RUN,rnd,enemyHQLocation) {
+			state = new InterruptibleGotoLocation(rc , MovementType.RUN) {
 
 				@Override
 				protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
@@ -153,9 +151,9 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 				@Override
 				public boolean setStartAndDestination(AStar finder) 
 				{
-					MapLocation dst = Utils.findRandomLocationNear( rc , enemyHQLocation , 
+					MapLocation dst = Utils.findRandomLocationNear( rc , RobotPlayer.enemyHQ , 
 							MyConstants.ENEMY_HQ_SAFE_DISTANCE ,  
-							MyConstants.ENEMY_HQ_SAFE_DISTANCE*2, rnd );
+							MyConstants.ENEMY_HQ_SAFE_DISTANCE*2);
 					if ( dst != null ) {
 						finder.setRoute( rc.getLocation() , dst );
 						return true;
@@ -169,9 +167,9 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 		} 
 		else 
 		{
-			Direction d = Utils.randomMovementDirection(rnd,rc);
+			Direction d = Utils.randomMovementDirection(rc);
 			if ( d != Direction.NONE ) {
-				if ( rc.getLocation().add( d ).distanceSquaredTo( enemyHQLocation ) > RobotType.HQ.attackRadiusMaxSquared ) {
+				if ( rc.getLocation().add( d ).distanceSquaredTo( RobotPlayer.enemyHQ ) > RobotType.HQ.attackRadiusMaxSquared ) {
 					rc.move(d);
 				}
 			}

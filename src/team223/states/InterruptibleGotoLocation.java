@@ -5,7 +5,6 @@ import java.util.List;
 import team223.AStar;
 import team223.AStar.PathFindingResultCallback;
 import team223.AStar.Result;
-import team223.FastRandom;
 import team223.MyConstants;
 import team223.State;
 import battlecode.common.GameActionException;
@@ -25,7 +24,6 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 	private final AStar finder;
 	private final MovementType movementType;
 	protected final RobotController rc;
-	protected final FastRandom rnd;
 
 	private State activeState;
 
@@ -33,22 +31,18 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 	
 	private PathFindingResultCallback callback;
 	
-	private final MapLocation enemyHQ;
-	
-	public InterruptibleGotoLocation(final RobotController rc,MovementType movementType,FastRandom rnd,MapLocation enemyHQ)
+	public InterruptibleGotoLocation(final RobotController rc,MovementType movementType)
 	{
 		super(rc);
 		
-		this.enemyHQ = enemyHQ;
-		this.rnd = rnd;
 		this.rc = rc;
 		this.movementType = movementType;
 
 		finder = new AStar(rc) {
 
 			@Override
-			public boolean isOccupied(MapLocation loc) throws GameActionException {
-				return InterruptibleGotoLocation.this.isOccupied( loc );
+			public boolean isWalkable(MapLocation loc) throws GameActionException {
+				return InterruptibleGotoLocation.this.isWalkable( loc );
 			}
 
 			@Override
@@ -206,18 +200,18 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 	
 	public State onLowRobotHealth(double currentRobotHealth) 
 	{
-		return new Fleeing(rc,rnd , enemyHQ );
+		return new Fleeing(rc);
 	}
 
 	public State onAttack(double currentRobotHealth) 
 	{
 		if ( currentRobotHealth < MyConstants.FLEE_HEALTH ) {
-			return new Fleeing(rc,rnd,enemyHQ);
+			return new Fleeing(rc);
 		}
 		return new AttackEnemiesInSight(rc);				
 	}		
 
-	public boolean isOccupied(MapLocation loc) throws GameActionException 
+	public boolean isWalkable(MapLocation loc) throws GameActionException 
 	{
 		if ( rc.canSenseSquare(loc) ) 
 		{
@@ -227,17 +221,17 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 				RobotInfo robot = rc.senseRobotInfo( (Robot) object );
 				switch( robot.type) {
 					case HQ:
-						return true;
+						return false;
 					case NOISETOWER:
 					case SOLDIER:
 					case PASTR:
-						return robot.team == rc.getTeam();
+						return robot.team != rc.getTeam();
 					default:
-						return false;
+						return true;
 				}
 			}
 		}
-		return false;
+		return true;
 	}
 
 	protected abstract boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc);	

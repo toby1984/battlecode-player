@@ -39,8 +39,8 @@ public class PathFinderTest {
 			}
 
 			@Override
-			public boolean isOccupied(MapLocation loc) throws GameActionException {
-				return false;
+			public boolean isWalkable(MapLocation loc) throws GameActionException {
+				return true;
 			}
 		};
 		

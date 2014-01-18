@@ -5,48 +5,61 @@ import battlecode.common.*;
 
 public class RobotPlayer 
 {
-	private static volatile FastRandom random;
+	public static volatile FastRandom rnd;
+	
 	private static volatile RobotBehaviour behaviour;
+	
+	public static MapLocation myHQ;
+	public static MapLocation enemyHQ;
+	
+	public static Team myTeam;
+	public static Team enemyTeam;
+	
+	public static RobotType myType;
 	
 	public static void run(RobotController rc) 
 	{
 		int invocationCount = 0;
-		MapLocation myHQ =null;
-		Team myTeam=null;
-		
 		int stepsToBackOff=0;
 		while(true) 
 		{
 			try 
 			{
 				final Integer id = rc.getRobot().getID(); 
-				if ( random == null ) 
+				if ( rnd == null ) 
 				{
 					myTeam = rc.getTeam();
-					random = new FastRandom( (long) (31+31*id.intValue()) );
-					stepsToBackOff = 5 + random.nextInt( 5 );
+					enemyTeam = myTeam.opponent();
+					
 					myHQ = rc.senseHQLocation();
+					enemyHQ = rc.senseEnemyHQLocation();
+					
+					myType = rc.getType();
+					
+					rnd = new FastRandom( (long) (31+31*id.intValue()) );
+					
+					stepsToBackOff = 5 + rnd.nextInt( 5 );
 				}
 				
 				if ( behaviour == null ) 
 				{
 					if ( rc.getType() == RobotType.HQ ) {
-						behaviour = new HQBehaviour( rc , random , rc.senseEnemyHQLocation() );
+						behaviour = new HQBehaviour( rc );
 					} 
 					else if ( rc.getType() != RobotType.PASTR ) 
 					{
 						int data = rc.readBroadcast( HQBehaviour.HQ_BROADCAST_CHANNEL );
 						switch( data ) {
 							case HQBehaviour.SPAWN_DESTROYER:
-								behaviour = new DestroyerBehaviour( rc , random , rc.senseEnemyHQLocation() );		
+								behaviour = new DestroyerBehaviour( rc );		
 								if ( MyConstants.DEBUG_MODE ) System.out.println("Robot is a destroyer");
 								break;
 							case HQBehaviour.SPAWN_COWBOY:
-								behaviour = new CowboyBehaviour( rc , myTeam , random , rc.senseEnemyHQLocation() );
+								behaviour = new CowboyBehaviour( rc );
 								if ( MyConstants.DEBUG_MODE ) System.out.println("Robot is a cowboy");
 								break;
 							case HQBehaviour.SPAWN_PASTURE_DESTROYER:
-								behaviour = new PastureDestroyerBehaviour( rc , random , rc.senseEnemyHQLocation() );
+								behaviour = new PastureDestroyerBehaviour( rc );
 								if ( MyConstants.DEBUG_MODE ) System.out.println("Robot is a HQ");
 								break;
 							default:

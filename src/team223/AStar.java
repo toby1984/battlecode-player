@@ -42,8 +42,6 @@ public abstract class AStar
     private boolean finished = false;
     private boolean aborted = false;
     
-    private final MapLocation enemyHQ;
-    
     private Callback callback;
     
     public static enum Result {
@@ -185,7 +183,6 @@ public abstract class AStar
 	
 	public AStar(RobotController rc) {
 		this.rc = rc;
-		this.enemyHQ = rc.senseEnemyHQLocation();
 	}
 	
 	public final boolean isInterrupted() {
@@ -404,6 +401,7 @@ public abstract class AStar
 	{
 		int x = parent.value.x;
 		int y = parent.value.y;
+		
 		for ( int dx = -1 ; dx <= 1 ; dx++ ) 
 		{
 			for ( int dy = -1 ; dy <= 1 ; dy++ ) 
@@ -411,10 +409,10 @@ public abstract class AStar
 				if ( dx != 0 || dy != 0 ) 
 				{
 					final MapLocation newLocation = new MapLocation(x+dx,y+dy);
-					if ( newLocation.distanceSquaredTo( enemyHQ ) >= MyConstants.ENEMY_HQ_SAFE_DISTANCE_SRT ) 
+					if ( newLocation.distanceSquaredTo( RobotPlayer.enemyHQ) >= MyConstants.ENEMY_HQ_SAFE_DISTANCE_SRT ) 
 					{
 						final TerrainTile tile = rc.senseTerrainTile( newLocation );
-						if ( ( tile == TerrainTile.NORMAL || tile == TerrainTile.ROAD ) && ! isOccupied( newLocation ) ) 
+						if ( ( tile == TerrainTile.NORMAL || tile == TerrainTile.ROAD ) && isWalkable( newLocation ) ) 
 						{ 
 							maybeAddNeighbor( parent , newLocation );
 						}
@@ -440,5 +438,5 @@ public abstract class AStar
         }
     }
     
-	public abstract boolean isOccupied(MapLocation loc) throws GameActionException;    
+	public abstract boolean isWalkable(MapLocation loc) throws GameActionException;    
 }

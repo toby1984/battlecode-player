@@ -25,7 +25,7 @@ public class Utils {
 		Direction.WEST, 
 		Direction.NORTH_WEST};
 
-	public static MapLocation findRandomLocationNear(RobotController rc,MapLocation currentLocation,int minRadius,int maxRadius,FastRandom rnd) {
+	public static MapLocation findRandomLocationNear(RobotController rc,MapLocation currentLocation,int minRadius,int maxRadius) {
 
 		final int minSquared = minRadius*minRadius;
 		final int maxSquared = maxRadius*maxRadius;
@@ -41,8 +41,8 @@ public class Utils {
 
 		for ( int retries = 10 ; retries > 0 ; retries-- ) 
 		{
-			int x = minX+(int) (dx*rnd.nextFloat());
-			int y = minY+(int) (dy*rnd.nextFloat());
+			int x = minX+(int) (dx*RobotPlayer.rnd.nextFloat());
+			int y = minY+(int) (dy*RobotPlayer.rnd.nextFloat());
 			
 			float distX = x-currentLocation.x;
 			float distY = y-currentLocation.y;
@@ -72,13 +72,13 @@ public class Utils {
 		return Direction.NONE;
 	}
 
-	public static Direction randomDirection(FastRandom rnd) {
-		return DIRECTIONS[ rnd.nextInt( DIRECTIONS.length ) ];
+	public static Direction randomDirection() {
+		return DIRECTIONS[ RobotPlayer.rnd.nextInt( DIRECTIONS.length ) ];
 	}
 
-	public static Direction randomMovementDirection(FastRandom rnd,RobotController rc) 
+	public static Direction randomMovementDirection(RobotController rc) 
 	{
-		Direction d = DIRECTIONS[ rnd.nextInt( DIRECTIONS.length ) ];		
+		Direction d = DIRECTIONS[ RobotPlayer.rnd.nextInt( DIRECTIONS.length ) ];		
 		for ( int retries = 7 ; retries > 0 ; retries-- ) {
 			if ( rc.canMove( d ) ) {
 				return d;
@@ -88,11 +88,11 @@ public class Utils {
 		return Direction.NONE;
 	}	
 
-	public static <T> void shuffle(T[] arr,FastRandom random) 
+	public static <T> void shuffle(T[] arr) 
 	{
 		for (int i=arr.length; i>1; i--) {
 			int i1 = i-1;
-			int j = random.nextInt(i);
+			int j = RobotPlayer.rnd.nextInt(i);
 			T tmp = arr[i1];
 			arr[i1] = arr[j];
 			arr[j] = tmp;

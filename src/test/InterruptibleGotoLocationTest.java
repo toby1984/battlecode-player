@@ -1,8 +1,6 @@
 package test;
 
 import team223.AStar;
-import team223.AStar.Result;
-import team223.FastRandom;
 import team223.MyConstants;
 import team223.State;
 import team223.states.InterruptibleGotoLocation;
@@ -82,14 +80,12 @@ public class InterruptibleGotoLocationTest {
 			public boolean isActive() { return true; }
 		};
 		
-		final FastRandom rnd = new FastRandom(0xdeadbeef);
-
-		State currentState = new InterruptibleGotoLocation(rc,MovementType.RUN , rnd , new MapLocation(100,100) ) {
+		State currentState = new InterruptibleGotoLocation(rc,MovementType.RUN  ) {
 
 			@Override
-			public boolean isOccupied(MapLocation loc) throws GameActionException 
+			public boolean isWalkable(MapLocation loc) throws GameActionException 
 			{
-				return false;
+				return true;
 			}
 
 			@Override

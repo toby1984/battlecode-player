@@ -1,7 +1,6 @@
 package team223.behaviours;
 
 import team223.AStar;
-import team223.FastRandom;
 import team223.MyConstants;
 import team223.RobotBehaviour;
 import team223.states.AttackEnemiesInSight;
@@ -18,12 +17,9 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 
 	private static final boolean VERBOSE = false;
 
-	private final FastRandom rnd;
-
-	public PastureDestroyerBehaviour(final RobotController rc, FastRandom rnd , MapLocation enemyHQLocation) 
+	public PastureDestroyerBehaviour(final RobotController rc) 
 	{
-		super(rc,enemyHQLocation);
-		this.rnd=rnd;
+		super(rc);
 	}
 
 	@Override
@@ -40,7 +36,7 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 		} 
 
 		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) {
-			state = new Fleeing( rc , rnd , enemyHQLocation );
+			state = new Fleeing( rc );
 			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }			
 			state = state.perform();
 			return;
@@ -111,7 +107,7 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 			System.out.println("Calculating path to closest pasture "+target);
 		}
 
-		state = new InterruptibleGotoLocation( rc , MovementType.RUN , rnd , enemyHQLocation ) {
+		state = new InterruptibleGotoLocation( rc , MovementType.RUN  ) {
 
 			@Override
 			protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
