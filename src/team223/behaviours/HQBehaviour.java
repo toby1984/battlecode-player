@@ -47,7 +47,7 @@ public final class HQBehaviour extends RobotBehaviour {
 			return;
 		}
 		
-		final Robot[] enemies = Utils.findEnemies( rc , RobotType.HQ.attackRadiusMaxSquared );
+		final Robot[] enemies = rc.senseNearbyGameObjects( Robot.class , RobotType.HQ.attackRadiusMaxSquared , RobotPlayer.enemyTeam );
 		RobotAndInfo enemy = Utils.pickEnemyToAttack( rc , enemies );
 		if ( enemy != null ) 
 		{

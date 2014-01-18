@@ -154,10 +154,6 @@ public class Utils {
 		throw new RuntimeException("Unreachable code reached, map size: "+rc.getMapWidth()+"x"+rc.getMapHeight()+" , location: "+location+" , x: "+locX+" , y: "+locY);
 	}
 
-	public static final Robot[] findEnemies(RobotController rc,int distanceSquared) {
-		return rc.senseNearbyGameObjects(Robot.class,distanceSquared,rc.getTeam().opponent());			
-	}
-
 	public static List<RobotInfo> sortAttackTargetsByDistance(RobotController rc,final MapLocation myLocation , Robot[] nearbyEnemies) throws GameActionException 
 	{
 		List<RobotInfo> list = new ArrayList<RobotInfo>();

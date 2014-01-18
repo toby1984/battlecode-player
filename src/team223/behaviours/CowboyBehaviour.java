@@ -6,7 +6,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import team223.AStar;
-import team223.FastRandom;
 import team223.MyConstants;
 import team223.RobotBehaviour;
 import team223.RobotPlayer;
@@ -25,7 +24,6 @@ import battlecode.common.Robot;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
-import battlecode.common.Team;
 
 public final class CowboyBehaviour extends RobotBehaviour {
 
@@ -65,7 +63,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 	public void perform() throws GameActionException 
 	{
 		roundCount++;
-
+		
 		if ( locations == null ) 
 		{
 			growth = rc.senseCowGrowth();
@@ -154,7 +152,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 			return;
 		}
 
-		Robot[] enemies = Utils.findEnemies( rc , RobotType.SOLDIER.attackRadiusMaxSquared );
+		Robot[] enemies = rc.senseNearbyGameObjects( Robot.class , RobotType.SOLDIER.attackRadiusMaxSquared , RobotPlayer.enemyTeam );
 		if ( enemies.length > 0 ) 
 		{
 			for ( int i = 0 ; i < enemies.length ; i++ ) {

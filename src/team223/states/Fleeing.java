@@ -22,7 +22,8 @@ public final class Fleeing extends State {
 	{
 		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) 
 		{
-			Robot[] enemies = Utils.findEnemies(rc , MyConstants.ENEMY_SAFE_DISTANCE );
+			Robot[] enemies = rc.senseNearbyGameObjects( Robot.class , MyConstants.ENEMY_SAFE_DISTANCE , RobotPlayer.enemyTeam );
+			
 			MapLocation centerOfMass = Utils.getMassCenterOfThreats( rc , enemies );
 			if ( centerOfMass != null ) 
 			{

@@ -45,7 +45,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 		Robot[] enemies=null;
 		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) 
 		{
-			enemies = Utils.findEnemies( rc , RobotType.SOLDIER.attackRadiusMaxSquared );
+			enemies = rc.senseNearbyGameObjects( Robot.class , RobotType.SOLDIER.attackRadiusMaxSquared , RobotPlayer.enemyTeam ); 
 			if ( Utils.getEstimatedHealOfThreats( rc , enemies ) >= rc.getHealth() ) 
 			{ 
 				state = new Fleeing( rc );
@@ -66,7 +66,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 		}
 		
 		if ( enemies == null ) {
-			enemies = Utils.findEnemies(rc , MyConstants.SOLDIER_SEEK_ENEMY_RANGE_SQUARED);
+			enemies = rc.senseNearbyGameObjects( Robot.class , MyConstants.SOLDIER_SEEK_ENEMY_RANGE_SQUARED , RobotPlayer.enemyTeam );
 		}
 		
 		final RobotAndInfo closestEnemy = Utils.pickEnemyToAttack( rc , enemies);
@@ -102,7 +102,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 				@Override
 				protected State beforeEachMove() 
 				{
-					Robot[] enemies = Utils.findEnemies(rc , RobotType.SOLDIER.attackRadiusMaxSquared );
+					Robot[] enemies = rc.senseNearbyGameObjects( Robot.class , RobotType.SOLDIER.attackRadiusMaxSquared , RobotPlayer.enemyTeam );
 					if ( enemies.length > 0 ) {
 						return new AttackEnemiesInSight(rc);
 					}
@@ -141,7 +141,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 				@Override
 				protected State beforeEachMove() 
 				{
-					Robot[] enemies = Utils.findEnemies(rc , RobotType.SOLDIER.attackRadiusMaxSquared );
+					Robot[] enemies = rc.senseNearbyGameObjects( Robot.class , RobotType.SOLDIER.attackRadiusMaxSquared , RobotPlayer.enemyTeam );
 					if ( enemies.length > 0 ) {
 						return new AttackEnemiesInSight(rc);
 					}
