@@ -39,23 +39,23 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 			return;
 		}
 		
-		if ( state instanceof Fleeing ) {
-			state = state.perform();
-			return;
-		} 
-		
-		Robot[] enemies=null;
-		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) 
-		{
-			enemies = rc.senseNearbyGameObjects( Robot.class , RobotType.SOLDIER.attackRadiusMaxSquared , RobotPlayer.enemyTeam ); 
-			if ( Utils.getEstimatedHealOfThreats( rc , enemies ) >= rc.getHealth() ) 
-			{ 
-				state = new Fleeing( rc );
-				if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
-				state = state.perform();
-				return;
-			}
-		}
+//		if ( state instanceof Fleeing ) {
+//			state = state.perform();
+//			return;
+//		} 
+//		
+//		Robot[] enemies=null;
+//		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) 
+//		{
+//			enemies = rc.senseNearbyGameObjects( Robot.class , RobotType.SOLDIER.attackRadiusMaxSquared , RobotPlayer.enemyTeam ); 
+//			if ( Utils.getEstimatedHealOfThreats( rc , enemies ) >= rc.getHealth() ) 
+//			{ 
+//				state = new Fleeing( rc );
+//				if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
+//				state = state.perform();
+//				return;
+//			}
+//		}
 		
 		if ( state instanceof Attacking || state instanceof AttackEnemiesInSight) {
 			state = state.perform();
@@ -69,9 +69,9 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 		
 		if ( MyConstants.DEBUG_MODE ) { System.out.println("Sensing enemies, current state: "+state); }
 		
-		if ( enemies == null ) {
-			enemies = rc.senseNearbyGameObjects( Robot.class , MyConstants.SOLDIER_SEEK_ENEMY_RANGE_SQUARED , RobotPlayer.enemyTeam );
-		}
+		// if ( enemies == null ) {
+			Robot[] enemies = rc.senseNearbyGameObjects( Robot.class , MyConstants.SOLDIER_SEEK_ENEMY_RANGE_SQUARED , RobotPlayer.enemyTeam );
+		// }
 		
 		final RobotAndInfo closestEnemy = Utils.pickEnemyToAttack( rc , enemies);
 		if ( closestEnemy != null ) 
@@ -94,6 +94,16 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 				@Override
 				protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
 					return current.equals(dstLoc);
+				}
+				
+				@Override
+				public State onLowRobotHealth(double currentRobotHealth) {
+					return null;
+				}
+				
+				@Override
+				public State onAttack(double currentRobotHealth) {
+					return new AttackEnemiesInSight(rc);
 				}
 				
 				@Override
@@ -148,6 +158,16 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 				@Override
 				protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
 					return current.equals(dstLoc);
+				}
+				
+				@Override
+				public State onLowRobotHealth(double currentRobotHealth) {
+					return null;
+				}
+				
+				@Override
+				public State onAttack(double currentRobotHealth) {
+					return new AttackEnemiesInSight(rc);
 				}
 				
 				@Override
