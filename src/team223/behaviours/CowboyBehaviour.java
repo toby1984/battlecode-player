@@ -13,6 +13,7 @@ import team223.Utils;
 import team223.states.AttackEnemiesInSight;
 import team223.states.Fleeing;
 import team223.states.InterruptibleGotoLocation;
+import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.GameConstants;
@@ -187,7 +188,8 @@ public final class CowboyBehaviour extends RobotBehaviour {
 				if ( hasArrivedAtDestination( currentLoc , currentDestination ) ) 
 				{
 					// at destination, construct pastr
-					if ( VERBOSE ) System.out.println("Reached destination "+oldState.getDestination()+" , building PASTR");					
+					if ( VERBOSE ) System.out.println("Reached destination "+oldState.getDestination()+" , building PASTR");	
+					System.out.println("Constructing PASTR in round "+Clock.getRoundNum());
 					rc.construct( RobotType.PASTR );
 					return true;
 				} 

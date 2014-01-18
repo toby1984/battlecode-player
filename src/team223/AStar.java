@@ -188,23 +188,23 @@ public abstract class AStar
 		this.enemyHQ = rc.senseEnemyHQLocation();
 	}
 	
-	public boolean isInterrupted() {
+	public final boolean isInterrupted() {
 		return interruptedNode != null;
 	}
 	
-	public boolean isFinished() {
+	public final boolean isFinished() {
 		return finished;
 	}
 	
-	public boolean isStarted() {
+	public final boolean isStarted() {
 		return started;
 	}
 	
-	public boolean isAborted() {
+	public final boolean isAborted() {
 		return aborted;
 	}
 	
-	public void continueFindPath() throws GameActionException 
+	public final void continueFindPath() throws GameActionException 
 	{
 		if ( interruptedNode == null || ! started || finished || aborted ) {
 			throw new IllegalStateException("Cannot continue (interrupted: "+isInterrupted()+" , started: "+started+" , finished: "+finished+" , aborted: "+aborted);
@@ -216,12 +216,12 @@ public abstract class AStar
 		return;		
 	}
 	
-	public void setRoute(MapLocation from,MapLocation to) {
+	public final void setRoute(MapLocation from,MapLocation to) {
 		this.start = from;
 		this.destination = to;
 	}
 	
-	public void reset() 
+	public final void reset() 
 	{
 		if ( MyConstants.DEBUG_MODE) System.out.println("Path finder "+start+" -> "+destination+" reset.");
 		
@@ -236,7 +236,7 @@ public abstract class AStar
         closeList = new HashSet<PathNode>();        
 	}
 	
-    public void findPath(Callback callback) throws GameActionException 
+    public final void findPath(Callback callback) throws GameActionException 
     {
     	if ( isFinished() || isStarted() ) {
     		throw new IllegalStateException("You need to call reset() before starting a new search");
@@ -377,23 +377,21 @@ public abstract class AStar
         current.g( movementCost );
     }
     
-    public MapLocation getStart() {
+    public final MapLocation getStart() {
 		return start;
 	}
     
-    public MapLocation getDestination() {
+    public final MapLocation getDestination() {
 		return destination;
 	}
 
 	private final float calcMovementCost(team223.AStar.PathNode current) 
 	{
-        float cost=0;
         if( current.parent != null ) 
         {
-        	final float dist = (float) Math.sqrt( current.value.distanceSquaredTo( current.parent.value ) );
-        	cost = current.parent.g() + dist;
+        	return current.parent.g + (float) Math.sqrt( current.value.distanceSquaredTo( current.parent.value ) );
         }
-        return cost;
+        return 0;
 	}
 	
 	private final float calcEstimatedCost( team223.AStar.PathNode node) 
@@ -426,7 +424,7 @@ public abstract class AStar
 		}
 	}	
     
-    private final void maybeAddNeighbor(PathNode parent, MapLocation point)
+    private void maybeAddNeighbor(PathNode parent, MapLocation point)
     {
         final PathNode newNode = new PathNode( point , parent );
         if ( ! closeList.contains(newNode) ) 
