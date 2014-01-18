@@ -31,14 +31,14 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 	
 	private PathFindingResultCallback callback;
 	
-	public InterruptibleGotoLocation(final RobotController rc,MovementType movementType)
+	public InterruptibleGotoLocation(final RobotController rc,MovementType movementType,int pathFindingTimeout)
 	{
 		super(rc);
 		
 		this.rc = rc;
 		this.movementType = movementType;
 
-		finder = new AStar(rc) {
+		finder = new AStar(rc,pathFindingTimeout) {
 
 			@Override
 			public boolean isWalkable(MapLocation loc) throws GameActionException {
@@ -59,7 +59,6 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 		if ( currentHealth == UNKNOWN_HEALTH ) 
 		{
 			currentHealth = rc.getHealth();
-			if ( VERBOSE ) System.out.println("Initialized health to "+currentHealth);
 			if ( currentHealth < MyConstants.FLEE_HEALTH ) { 
 				newState = onLowRobotHealth( currentHealth );
 				if ( VERBOSE ) System.out.println("Robot is low on health ("+currentHealth+") , switched to state: "+newState);				
@@ -68,7 +67,6 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 		else 
 		{
 			double newHealth = rc.getHealth();
-			if ( VERBOSE ) System.out.println("Robot health is now "+newHealth);
 			if ( newHealth < currentHealth ) 
 			{
 				// we're under attack 
@@ -113,7 +111,7 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 				activeState = null;
 				InterruptibleGotoLocation.this.callback = callback;
 				finder.reset();
-				if ( ! setStartAndDestination( finder ) ) {
+				if ( ! setStartAndDestination( finder , true ) ) {
 					if ( MyConstants.DEBUG_MODE ) System.out.println("setStartAndDestination() in recalculatePath() failed");
 					finder.abort();
 				}
@@ -159,8 +157,6 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 	{
 		if ( activeState != null ) 
 		{
-			if ( VERBOSE ) System.out.println("perform( "+activeState+" )");
-			
 			activeState  = activeState.perform();
 			
 			if ( activeState != null ) {
@@ -174,13 +170,20 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 				if ( VERBOSE ) System.out.println("perform() returns, search finished.");
 				return null;
 			}
-			if ( VERBOSE ) System.out.println("perform() continues path finding");			
+			if ( finder.isAborted() ) 
+			{
+				if ( VERBOSE ) System.out.println("Path finding aborted.");
+				return null; // 
+			}
 			finder.continueFindPath();
 			return this;
 		}
 		
 		if ( VERBOSE ) System.out.println("perform() starts path finding");			
-		if ( setStartAndDestination( finder ) ) {
+		
+		finder.reset();
+		
+		if ( setStartAndDestination( finder , false ) ) {
 			finder.findPath( this );
 			return this;
 		}
@@ -223,7 +226,9 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 					case HQ:
 						return false;
 					case NOISETOWER:
+						return robot.team != rc.getTeam();
 					case SOLDIER:
+						return true; // enemies will be killed, friendlies will hopefully go out of the way...
 					case PASTR:
 						return robot.team != rc.getTeam();
 					default:
@@ -236,5 +241,5 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 
 	protected abstract boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc);	
 
-	public abstract boolean setStartAndDestination(AStar finder);
+	public abstract boolean setStartAndDestination(AStar finder,boolean retry);
 }

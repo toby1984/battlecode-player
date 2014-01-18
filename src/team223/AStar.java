@@ -19,7 +19,7 @@ public abstract class AStar
 {
 	private static final boolean VERBOSE = false;
 	
-	private static final boolean DEBUG_BYTECODES_USED = false;
+	private static final boolean DEBUG_RUNTIME = false;
 	
     public static final int INTERRUPT_CHECK_INTERVAL = 3;
     
@@ -42,15 +42,31 @@ public abstract class AStar
     private boolean finished = false;
     private boolean aborted = false;
     
+    private final int pathFindingTimeout;
+
+    private int totalElapsedRounds;
+    private int elapsedRounds;
+    private int startedInRound;
+    
     private Callback callback;
+    
+    // debugging
+    private int missedRounds = 0;
+    private long debugCounter = 0;    
     
     public static enum Result {
     	INTERRUPT,ABORT,CONTINUE;
     }
     
+    public static enum TimeoutResult {
+    	ABORT,CONTINUE;
+    }
+    
     public interface PathFindingResultCallback 
     {
     	public void foundPath(List<MapLocation> path);
+    	
+    	public TimeoutResult onTimeout();
     	
     	public void foundNoPath();    	
     }
@@ -181,8 +197,9 @@ public abstract class AStar
         openList.add( node );
 	}    
 	
-	public AStar(RobotController rc) {
+	public AStar(RobotController rc,int pathFindingTimeout) {
 		this.rc = rc;
+		this.pathFindingTimeout = pathFindingTimeout;
 	}
 	
 	public final boolean isInterrupted() {
@@ -211,11 +228,26 @@ public abstract class AStar
 		
     	PathNode current = interruptedNode;
 		interruptedNode = null;    		
+		
+		startedInRound = Clock.getRoundNum();
 		mainLoop(current);
-		return;		
 	}
 	
 	public final void setRoute(MapLocation from,MapLocation to) {
+		if ( from == null || to == null ) {
+			throw new IllegalArgumentException("from/to must not be null (from: "+from+" / to: "+to+")");
+		}
+		if ( started ) {
+			new Exception("Cannot change route on already started search").printStackTrace();
+			throw new IllegalStateException("Cannot change route on already started search");
+		}
+		if ( MyConstants.DEBUG_MODE ) {
+			try {
+				System.out.println("setRoute(): "+from+" -> "+to+" (walkable: "+isWalkable( to )+")" );
+			} catch (GameActionException e) {
+				e.printStackTrace();
+			}
+		}
 		this.start = from;
 		this.destination = to;
 	}
@@ -226,6 +258,9 @@ public abstract class AStar
 		
     	iterationCount = INTERRUPT_CHECK_INTERVAL; 
     	interruptedNode = null;
+    	
+    	totalElapsedRounds = 0;
+    	elapsedRounds = 0;
     	
     	aborted = false;
         finished = false;
@@ -245,15 +280,17 @@ public abstract class AStar
     public final void findPath(Callback callback) throws GameActionException 
     {
     	if ( isFinished() || isStarted() || isAborted() ) {
-    		throw new IllegalStateException("You need to call reset() before starting a new search");
+    		throw new IllegalStateException("You need to call reset() before starting a new search (finished:"+finished+" , started: "+started+", aborted: "+aborted+")");
     	}
     	
     	reset();
     	
+    	startedInRound = Clock.getRoundNum();
+    	
         started = true;
         this.callback = callback;
         
-		if ( MyConstants.DEBUG_MODE) System.out.println("Looking for path from "+this.start+" to "+this.destination);
+		if ( DEBUG_RUNTIME ) System.out.println("Looking for path from "+this.start+" to "+this.destination);
 		
         if ( this.start.equals(  this.destination ) ) { // trivial case
         	List<MapLocation> result = new ArrayList<MapLocation>();
@@ -284,33 +321,31 @@ public abstract class AStar
     	interruptedNode = null;
     	
     	if ( result != null ) {
-			if ( VERBOSE ) {
-				System.out.println("Search finished , result: "+result);
+			if ( DEBUG_RUNTIME ) {
+				System.out.println("*** (elapsed rounds: "+totalElapsedRounds+") Path finding finished , path length: "+result.size());
 			}
     		callback.foundPath( result );
     	} 
     	else 
     	{
-			if ( VERBOSE ) {
-				System.out.println("Search failed (aborted: "+aborted+")");
+			if ( DEBUG_RUNTIME ) {
+				System.out.println("*** (elapsed rounds: "+totalElapsedRounds+") Path finding failed (aborted: "+aborted+" , elapsed rounds: "+totalElapsedRounds+")");
 			}
     		callback.foundNoPath();
     	}
     }
     
-    private int byteCodesUsed = 0;
-    private int currentRound = 0;
-    private int missedRounds = 0;
-    
     private void mainLoop(PathNode current) throws GameActionException 
     {
-		if ( DEBUG_BYTECODES_USED ) {
-			currentRound = Clock.getRoundNum();
-			byteCodesUsed = Clock.getBytecodeNum();
-		}
-		
         while ( true ) 
         {
+        	if ( VERBOSE ) {
+        		debugCounter++;
+        		if ( (debugCounter%30) == 0 ) {
+        			System.out.println("Searching (nodes: "+debugCounter+" , "+start+" -> "+destination+")");
+        		}
+        	}
+        	
         	if ( aborted ) {
         		searchFinished(null);
         		return;
@@ -345,20 +380,40 @@ public abstract class AStar
             
         	if ( --iterationCount <= 0 ) 
         	{
-        		if ( DEBUG_BYTECODES_USED ) {
-        			int newRound = Clock.getRoundNum();
-        			int newByteCodesUsed = Clock.getBytecodeNum();
-        			if ( newRound == currentRound ) {
-        				System.out.println("checkInterrupt() after "+(newByteCodesUsed-byteCodesUsed)+" bytecodes (missed rounds: "+missedRounds+")");
-        				missedRounds = 0;
-        			} else {
-        				missedRounds++;
-        			}
-        			currentRound = newRound;
-        			byteCodesUsed = newByteCodesUsed;
-        		}        		
+        		iterationCount = INTERRUPT_CHECK_INTERVAL;
+
+        		if ( DEBUG_RUNTIME ) 
+        		{
+            		final int currentRound = Clock.getRoundNum();
+            		int delta = ( currentRound - startedInRound);
+            		
+            		totalElapsedRounds += delta;
+            		elapsedRounds += delta;
+            		startedInRound = currentRound;        			
+        		} else {
+            		final int currentRound = Clock.getRoundNum();
+            		elapsedRounds += ( currentRound - startedInRound);
+            		startedInRound = currentRound;         			
+        		}
         		
-        		iterationCount = INTERRUPT_CHECK_INTERVAL;    
+        		if ( elapsedRounds >= pathFindingTimeout ) 
+        		{
+        			if ( DEBUG_RUNTIME ) System.out.println("!!! (elapsed: "+totalElapsedRounds+", timeout: "+startedInRound+") Path finding timeout *** ");
+        			switch( callback.onTimeout() ) 
+        			{
+            			case ABORT:
+            				if ( DEBUG_RUNTIME ) {
+            					System.out.println("!!! (Timeout,elapsed: "+totalElapsedRounds+") Aborted at node "+current);
+            				}        				
+            				finished = true;
+            				aborted = true;
+            				interruptedNode = null;
+            				return;
+        			}
+        			if ( DEBUG_RUNTIME ) System.out.println("!!! (elapsed rounds: "+totalElapsedRounds+") Path finding continues after timeout ***");
+        			elapsedRounds = 0;        			
+        		}
+        		
         		switch( callback.checkInterrupt() ) 
         		{
         			case ABORT:
@@ -449,7 +504,7 @@ public abstract class AStar
             if ( existing == null || newNode.g < existing.g ) // prefer shorter path
             {
                 insert( newNode );
-            } 
+            }
         }
     }
     

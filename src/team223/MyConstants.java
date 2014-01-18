@@ -10,7 +10,13 @@ public interface MyConstants
 	
 	public static final int SOLDIER_ATTACK_RANGE_SQUARED = RobotType.SOLDIER.attackRadiusMaxSquared;
 	
-	public static final int FLEE_HEALTH = 40;
+	public static final int FLEE_HEALTH = 20;
+	
+	public static final int DESTROYER_PATH_FINDING_TIMEOUT_ROUNDS = 300;
+	
+	public static final int COWBOY_PATH_FINDING_TIMEOUT_ROUNDS = 700;
+	
+	public static final int PASTURE_DESTROYER_PATH_FINDING_TIMEOUT_ROUNDS = 1000;
 	
 	/**
 	 * Distance up to which destroyers will try to hunt-down enemy robots.

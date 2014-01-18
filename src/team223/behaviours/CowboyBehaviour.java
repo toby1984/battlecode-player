@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import team223.AStar;
+import team223.AStar.TimeoutResult;
 import team223.MyConstants;
 import team223.RobotBehaviour;
 import team223.RobotPlayer;
@@ -181,8 +182,9 @@ public final class CowboyBehaviour extends RobotBehaviour {
 				if ( hasArrivedAtDestination( currentLoc , currentDestination ) ) 
 				{
 					// at destination, construct pastr
-					if ( VERBOSE ) System.out.println("Reached destination "+oldState.getDestination()+" , building PASTR");	
-					System.out.println("Constructing PASTR in round "+Clock.getRoundNum());
+					if ( VERBOSE ) {
+						System.out.println("Reached destination "+oldState.getDestination()+" , building PASTR");	
+					}
 					rc.construct( RobotType.PASTR );
 					return true;
 				} 
@@ -196,11 +198,11 @@ public final class CowboyBehaviour extends RobotBehaviour {
 		{
 			if ( isTerminallyOccupied( currentDestination , rc ) ) {
 				discardLocation( currentDestination );
-				currentDestination = null;
+			} else {
+				// retry moving to this location
+				gotoLocation( rc , currentDestination );
+				return true;
 			}
-			// retry moving to this location
-			gotoLocation( rc , currentDestination );
-			return true;
 		}
 
 		currentDestination = null;
@@ -222,11 +224,16 @@ public final class CowboyBehaviour extends RobotBehaviour {
 
 	private void gotoLocation(final RobotController rc,final MapLocation loc) throws GameActionException 
 	{
+		if ( loc == null ) {
+			new Exception("Location must not be null").printStackTrace();
+			throw new IllegalArgumentException("Location must not be null");
+		}
+		
 		if ( VERBOSE ) System.out.println("Moving to pasture location "+loc);
 		
 		currentDestination = loc;
 		
-		state = new InterruptibleGotoLocation( rc , MovementType.SNEAK ) {
+		state = new InterruptibleGotoLocation( rc , MovementType.SNEAK , MyConstants.COWBOY_PATH_FINDING_TIMEOUT_ROUNDS) {
 
 			@Override
 			protected boolean hasArrivedAtDestination(MapLocation current,MapLocation dstLoc) {
@@ -234,9 +241,14 @@ public final class CowboyBehaviour extends RobotBehaviour {
 			}
 
 			@Override
-			public boolean setStartAndDestination(AStar finder) {
+			public boolean setStartAndDestination(AStar finder,boolean retry) {
 				finder.setRoute( rc.getLocation() , loc );
 				return true;
+			}
+
+			@Override
+			public TimeoutResult onTimeout() {
+				return TimeoutResult.ABORT;
 			}
 		};
 	}

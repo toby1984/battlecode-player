@@ -1,6 +1,7 @@
 package test;
 
 import team223.AStar;
+import team223.AStar.TimeoutResult;
 import team223.MyConstants;
 import team223.State;
 import team223.states.InterruptibleGotoLocation;
@@ -80,7 +81,7 @@ public class InterruptibleGotoLocationTest {
 			public boolean isActive() { return true; }
 		};
 		
-		State currentState = new InterruptibleGotoLocation(rc,MovementType.RUN  ) {
+		State currentState = new InterruptibleGotoLocation(rc,MovementType.RUN ,-1 ) {
 
 			@Override
 			public boolean isWalkable(MapLocation loc) throws GameActionException 
@@ -94,9 +95,14 @@ public class InterruptibleGotoLocationTest {
 			}
 
 			@Override
-			public boolean setStartAndDestination(AStar finder) {
+			public boolean setStartAndDestination(AStar finder,boolean retry) {
 				finder.setRoute( from , to );
 				return true;
+			}
+
+			@Override
+			public TimeoutResult onTimeout() {
+				return TimeoutResult.CONTINUE;
 			}
 		};
 		

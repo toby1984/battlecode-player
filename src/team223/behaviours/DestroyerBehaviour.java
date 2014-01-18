@@ -1,7 +1,8 @@
 package team223.behaviours;
 
 import team223.AStar;
-import team223.FastRandom;
+import team223.AStar.Result;
+import team223.AStar.TimeoutResult;
 import team223.MyConstants;
 import team223.RobotBehaviour;
 import team223.RobotPlayer;
@@ -88,7 +89,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 			
 			if ( MyConstants.DEBUG_MODE ) { System.out.println("Enemy too far away, calculating path to enemy "+closestEnemy.robot+" at "+closestEnemy.info.location ); }
 			
-			state = new InterruptibleGotoLocation(rc , MovementType.RUN) {
+			state = new InterruptibleGotoLocation(rc , MovementType.RUN,MyConstants.DESTROYER_PATH_FINDING_TIMEOUT_ROUNDS) {
 
 				@Override
 				protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
@@ -112,7 +113,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 				}
 
 				@Override
-				public boolean setStartAndDestination(AStar finder) 
+				public boolean setStartAndDestination(AStar finder,boolean retry) 
 				{
 					if ( rc.canSenseObject( closestEnemy.robot ) ) 
 					{
@@ -127,6 +128,11 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 					}
 					return false;
 				}
+
+				@Override
+				public TimeoutResult onTimeout() {
+					return TimeoutResult.ABORT;
+				}
 			};
 			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }			
 			state = state.perform();
@@ -137,7 +143,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 		if ( RobotPlayer.enemyHQ.distanceSquaredTo( rc.getLocation() ) > MyConstants.SOLIDER_HOMEIN_ON_HQ_DISTANCE_SQUARED ) 
 		{
 			if ( MyConstants.DEBUG_MODE ) System.out.println("Homing in on enemy HQ");			
-			state = new InterruptibleGotoLocation(rc , MovementType.RUN) {
+			state = new InterruptibleGotoLocation(rc , MovementType.RUN,MyConstants.DESTROYER_PATH_FINDING_TIMEOUT_ROUNDS) {
 
 				@Override
 				protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
@@ -161,7 +167,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 				}				
 
 				@Override
-				public boolean setStartAndDestination(AStar finder) 
+				public boolean setStartAndDestination(AStar finder, boolean retry) 
 				{
 					MapLocation dst = Utils.findRandomLocationNear( rc , RobotPlayer.enemyHQ , 
 							MyConstants.ENEMY_HQ_SAFE_DISTANCE ,  
@@ -171,6 +177,11 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 						return true;
 					}
 					return false;
+				}
+
+				@Override
+				public TimeoutResult onTimeout() {
+					return TimeoutResult.ABORT;
 				}
 			};
 			

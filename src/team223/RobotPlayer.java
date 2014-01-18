@@ -15,6 +15,8 @@ public class RobotPlayer
 	public static Team myTeam;
 	public static Team enemyTeam;
 	
+	public static int id;
+	
 	public static RobotType myType;
 	
 	public static void run(RobotController rc) 
@@ -25,11 +27,14 @@ public class RobotPlayer
 		{
 			try 
 			{
-				final Integer id = rc.getRobot().getID(); 
 				if ( rnd == null ) 
 				{
+					final Integer id = rc.getRobot().getID(); 
+					
 					myTeam = rc.getTeam();
 					enemyTeam = myTeam.opponent();
+					
+					RobotPlayer.id = id;
 					
 					myHQ = rc.senseHQLocation();
 					enemyHQ = rc.senseEnemyHQLocation();
@@ -45,6 +50,10 @@ public class RobotPlayer
 				{
 					if ( rc.getType() == RobotType.HQ ) {
 						behaviour = new HQBehaviour( rc );
+						if ( MyConstants.DEBUG_MODE ) {
+							System.out.println("Robot is a HQ");
+						}
+						rc.setIndicatorString( 0 , "HQ");						
 					} 
 					else if ( rc.getType() != RobotType.PASTR ) 
 					{
@@ -52,15 +61,24 @@ public class RobotPlayer
 						switch( data ) {
 							case HQBehaviour.SPAWN_DESTROYER:
 								behaviour = new DestroyerBehaviour( rc );		
-								if ( MyConstants.DEBUG_MODE ) System.out.println("Robot is a destroyer");
+								if ( MyConstants.DEBUG_MODE ) {
+									System.out.println("Robot is a destroyer");
+								}
+								rc.setIndicatorString( 0 , "Destroyer");								
 								break;
 							case HQBehaviour.SPAWN_COWBOY:
 								behaviour = new CowboyBehaviour( rc );
-								if ( MyConstants.DEBUG_MODE ) System.out.println("Robot is a cowboy");
+								if ( MyConstants.DEBUG_MODE ) {
+									System.out.println("Robot is a cowboy");
+								}
+								rc.setIndicatorString( 0 , "Cowboy");									
 								break;
 							case HQBehaviour.SPAWN_PASTURE_DESTROYER:
 								behaviour = new PastureDestroyerBehaviour( rc );
-								if ( MyConstants.DEBUG_MODE ) System.out.println("Robot is a HQ");
+								if ( MyConstants.DEBUG_MODE ) {
+									System.out.println("Robot is a Pasture destroyer");
+								}
+								rc.setIndicatorString( 0 , "Pasture destroyer");								
 								break;
 							default:
 								throw new RuntimeException("Failed to read broadcast from HQ ?");

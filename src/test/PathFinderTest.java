@@ -4,9 +4,10 @@ import java.util.List;
 import java.util.Random;
 
 import team223.AStar;
-import team223.RobotPlayer;
 import team223.AStar.Callback;
 import team223.AStar.Result;
+import team223.AStar.TimeoutResult;
+import team223.RobotPlayer;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.GameObject;
@@ -34,7 +35,7 @@ public class PathFinderTest {
 			}
 		};
 		
-		AStar finder = new AStar(rc) {
+		AStar finder = new AStar(rc,-1) {
 
 			@Override
 			protected boolean isCloseEnoughToTarget(PathNode  node) {
@@ -66,6 +67,12 @@ public class PathFinderTest {
 			@Override
 			public Result checkInterrupt() {
 				return Result.INTERRUPT;
+			}
+
+			@Override
+			public TimeoutResult onTimeout() {
+				System.out.println("Timeout");
+				return TimeoutResult.CONTINUE;
 			}
 		};
 		

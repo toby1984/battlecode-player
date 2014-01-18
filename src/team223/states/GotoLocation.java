@@ -3,6 +3,7 @@ package team223.states;
 import java.util.List;
 
 import team223.AStar.PathFindingResultCallback;
+import team223.AStar.TimeoutResult;
 import team223.MyConstants;
 import team223.State;
 import battlecode.common.Direction;
@@ -43,6 +44,11 @@ public abstract class GotoLocation extends State {
 		@Override
 		public void foundNoPath() {
 			if ( VERBOSE) System.out.println("ERROR: Failed to recalculate path" );									
+		}
+
+		@Override
+		public TimeoutResult onTimeout() {
+			return TimeoutResult.CONTINUE;
 		}
 	};
 

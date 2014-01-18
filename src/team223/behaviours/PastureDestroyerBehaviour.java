@@ -1,6 +1,7 @@
 package team223.behaviours;
 
 import team223.AStar;
+import team223.AStar.TimeoutResult;
 import team223.MyConstants;
 import team223.RobotBehaviour;
 import team223.states.AttackEnemiesInSight;
@@ -107,7 +108,7 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 			System.out.println("Calculating path to closest pasture "+target);
 		}
 
-		state = new InterruptibleGotoLocation( rc , MovementType.RUN  ) {
+		state = new InterruptibleGotoLocation( rc , MovementType.RUN , MyConstants.PASTURE_DESTROYER_PATH_FINDING_TIMEOUT_ROUNDS ) {
 
 			@Override
 			protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
@@ -115,9 +116,28 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 			}
 
 			@Override
-			public boolean setStartAndDestination(AStar finder) {
-				finder.setRoute( rc.getLocation() , target );
+			public boolean setStartAndDestination(AStar finder,boolean retry) 
+			{
+				if ( retry ) 
+				{
+					MapLocation[] pastrLocations = rc.sensePastrLocations( rc.getTeam().opponent() );
+					if ( pastrLocations.length != 0 ) {
+						MapLocation newTarget = pickClosestTarget(myLocation,pastrLocations);
+						if ( newTarget != null ) {
+							finder.setRoute( rc.getLocation() , newTarget );
+							return true;
+						}
+					}
+					return false;
+				} else {
+					finder.setRoute( rc.getLocation() , target );
+				} 
 				return true;
+			}
+
+			@Override
+			public TimeoutResult onTimeout() {
+				return TimeoutResult.ABORT;
 			}
 		};
 		if ( MyConstants.DEBUG_MODE ) behaviourStateChanged(); 
