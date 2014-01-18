@@ -72,16 +72,20 @@ public abstract class AStar
         private float f;
         private float g;
         
+        private final int hashcode;
+        
         public PathNode(V value) 
         {
             this.parent=null;
             this.value = value;
+            this.hashcode = value.hashCode();
         }
         
         public PathNode(V value,PathNode<V> parent) 
         {
             this.parent=parent;
             this.value = value;
+            this.hashcode = value.hashCode();
         }        
         
         @Override
@@ -97,11 +101,9 @@ public abstract class AStar
         }
         
         @Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + value.hashCode();
-			return result;
+		public int hashCode() 
+        {
+        	return hashcode;
 		}
 
 		@SuppressWarnings("unchecked")
