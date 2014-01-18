@@ -499,11 +499,14 @@ public abstract class AStar
         {
             final PathNode existing = openMap.get(newNode);
 
-            assignCost( newNode );
+            final float movementCost = calcMovementCost(newNode);
+			newNode.f( movementCost + calcEstimatedCost( newNode ) );
+			newNode.g( movementCost );
 
             if ( existing == null || newNode.g < existing.g ) // prefer shorter path
             {
-                insert( newNode );
+                openMap.put(newNode,newNode);
+				openList.add( newNode );
             }
         }
     }
