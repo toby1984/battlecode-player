@@ -34,7 +34,7 @@ public class PathFinderTest {
 		AStar finder = new AStar(rc) {
 
 			@Override
-			protected boolean isCloseEnoughToTarget(PathNode<MapLocation> node) {
+			protected boolean isCloseEnoughToTarget(PathNode  node) {
 				return node.value.equals( to );
 			}
 

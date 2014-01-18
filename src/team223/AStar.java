@@ -5,9 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.PriorityQueue;
-import java.util.Set;
 import java.util.Stack;
 
 import battlecode.common.Clock;
@@ -26,11 +24,11 @@ public abstract class AStar
     public static final int INTERRUPT_CHECK_INTERVAL = 3;
     
     // nodes to check
-    private HashMap<PathNode<MapLocation>,PathNode<MapLocation>> openMap = new HashMap<PathNode<MapLocation>, PathNode<MapLocation>>(2000);
-    private PriorityQueue<PathNode<MapLocation>> openList = new PriorityQueue<PathNode<MapLocation>>(2000);
+    private HashMap<PathNode,PathNode> openMap = new HashMap<PathNode, PathNode>(2000);
+    private PriorityQueue<PathNode> openList = new PriorityQueue<PathNode>(2000);
 
     // nodes ruled out
-    private HashSet<PathNode<MapLocation>> closeList = new HashSet<PathNode<MapLocation>>();
+    private HashSet<PathNode> closeList = new HashSet<PathNode>();
 	
     protected MapLocation start;
     protected MapLocation destination;
@@ -38,7 +36,7 @@ public abstract class AStar
     private final RobotController rc;
     
     private int iterationCount;
-    private PathNode<MapLocation> interruptedNode;
+    private PathNode interruptedNode;
     
     private boolean started = false;
     private boolean finished = false;
@@ -64,24 +62,24 @@ public abstract class AStar
     	public Result checkInterrupt();
     }
     
-    public final static class PathNode<V> implements Comparable<PathNode<V>>
+    public final static class PathNode implements Comparable<PathNode>
     {
-        public PathNode<V> parent;
-        public final V value;
+        public PathNode parent;
+        public final MapLocation value;
         
         private float f;
         private float g;
         
         private final int hashcode;
         
-        public PathNode(V value) 
+        public PathNode(MapLocation value) 
         {
             this.parent=null;
             this.value = value;
             this.hashcode = value.hashCode();
         }
         
-        public PathNode(V value,PathNode<V> parent) 
+        public PathNode(MapLocation value,PathNode parent) 
         {
             this.parent=parent;
             this.value = value;
@@ -89,7 +87,7 @@ public abstract class AStar
         }        
         
         @Override
-        public int compareTo(PathNode<V> o) 
+        public int compareTo(PathNode o) 
         {
         	if ( this.f < o.f ) {
         		return -1;
@@ -111,7 +109,7 @@ public abstract class AStar
 		public boolean equals(Object obj) 
 		{
 			if ( obj instanceof PathNode) {
-				return this.value.equals( ((PathNode<V>) obj).value );
+				return this.value.equals( ((PathNode) obj).value );
 			}
 			return false;
 		}
@@ -122,11 +120,11 @@ public abstract class AStar
         public final float f() { return f; }
         public final float g() { return g;}
 
-        public final PathNode<V> parent() { return parent; }
+        public final PathNode parent() { return parent; }
 
         public final int getNodeCount() {
             int result =1;
-            PathNode<V> current = this.parent;
+            PathNode current = this.parent;
             while( current != null ) {
                 result++;
                 current = current.parent;
@@ -139,10 +137,10 @@ public abstract class AStar
          * 
          * @return
          */
-        public final List<PathNode<V>> toList() 
+        public final List<PathNode> toList() 
         {
-        	List<PathNode<V>> result = new ArrayList<PathNode<V>>();
-        	PathNode<V> current = this;
+        	List<PathNode> result = new ArrayList<PathNode>();
+        	PathNode current = this;
         	do 
         	{
         		result.add( current );
@@ -155,9 +153,9 @@ public abstract class AStar
         @Override
         public final String toString()
         {
-            final Stack<PathNode<V>> stack = new Stack<PathNode<V>>();
+            final Stack<PathNode> stack = new Stack<PathNode>();
 
-            PathNode<V> current = this;
+            PathNode current = this;
             do {
                 stack.push( current );
                 current = current.parent;
@@ -165,7 +163,7 @@ public abstract class AStar
 
             final StringBuilder builder = new StringBuilder();
             while ( ! stack.isEmpty() ) {
-                final PathNode<V> pop = stack.pop();
+                final PathNode pop = stack.pop();
                 builder.append( "[ "+nodeToString( pop )+" ]");
                 if ( ! stack.isEmpty() ) {
                     builder.append(" -> ");
@@ -174,12 +172,12 @@ public abstract class AStar
             return builder.toString();            
         }
         
-        private String nodeToString(PathNode<V> n) {
+        private String nodeToString(PathNode n) {
         	return n.value == null ? "<NULL>" : n.value.toString();
         }
     }
     
-	private void insert(PathNode<MapLocation> node) 
+	private void insert(PathNode node) 
 	{
         openMap.put(node,node);
         openList.add( node );
@@ -212,7 +210,7 @@ public abstract class AStar
 			throw new IllegalStateException("Cannot continue (interrupted: "+isInterrupted()+" , started: "+started+" , finished: "+finished+" , aborted: "+aborted);
 		}
 		
-    	PathNode<MapLocation> current = interruptedNode;
+    	PathNode current = interruptedNode;
 		interruptedNode = null;    		
 		mainLoop(current);
 		return;		
@@ -233,9 +231,9 @@ public abstract class AStar
         finished = false;
         started = false;	
         
-        openMap = new HashMap<PathNode<MapLocation>, PathNode<MapLocation>>(2000);
-        openList = new PriorityQueue<PathNode<MapLocation>>(2000);
-        closeList = new HashSet<PathNode<MapLocation>>();        
+        openMap = new HashMap<PathNode, PathNode>(2000);
+        openList = new PriorityQueue<PathNode>(2000);
+        closeList = new HashSet<PathNode>();        
 	}
 	
     public void findPath(Callback callback) throws GameActionException 
@@ -260,7 +258,7 @@ public abstract class AStar
             return;
         }
     	
-    	final PathNode<MapLocation> start = new PathNode<MapLocation>( this.start );
+    	final PathNode start = new PathNode( this.start );
     	
         assignCost( start );
         closeList.add( start );
@@ -292,7 +290,7 @@ public abstract class AStar
     private int currentRound = 0;
     private int missedRounds = 0;
     
-    private void mainLoop(PathNode<MapLocation> current) throws GameActionException 
+    private void mainLoop(PathNode current) throws GameActionException 
     {
 		if ( VERBOSE ) {
 			System.out.println("Continueing/starting search at node "+current);
@@ -312,7 +310,7 @@ public abstract class AStar
                 return;
             }
 
-            PathNode<MapLocation> cheapestPath = openList.remove();
+            PathNode cheapestPath = openList.remove();
 
             if ( isCloseEnoughToTarget( cheapestPath ) ) 
             {
@@ -369,9 +367,9 @@ public abstract class AStar
         }    	
     }
     
-    protected abstract boolean isCloseEnoughToTarget( PathNode<MapLocation> node ); 
+    protected abstract boolean isCloseEnoughToTarget( PathNode node ); 
 
-    private void assignCost(PathNode<MapLocation> current) 
+    private void assignCost(PathNode current) 
     {
         final float movementCost = calcMovementCost(current);
         final float estimatedCost = calcEstimatedCost( current );
@@ -387,7 +385,7 @@ public abstract class AStar
 		return destination;
 	}
 
-	private final float calcMovementCost(team223.AStar.PathNode<MapLocation> current) 
+	private final float calcMovementCost(team223.AStar.PathNode current) 
 	{
         float cost=0;
         if( current.parent != null ) 
@@ -398,13 +396,13 @@ public abstract class AStar
         return cost;
 	}
 	
-	private final float calcEstimatedCost( team223.AStar.PathNode<MapLocation> node) 
+	private final float calcEstimatedCost( team223.AStar.PathNode node) 
 	{
     	// WEIGHTED A-STAR !!!
     	return 4 * (float) Math.sqrt( destination.distanceSquaredTo(  node.value ) );
 	}
 
-	private final void scheduleNeighbors(team223.AStar.PathNode<MapLocation> parent) throws GameActionException 
+	private final void scheduleNeighbors(team223.AStar.PathNode parent) throws GameActionException 
 	{
 		int x = parent.value.x;
 		int y = parent.value.y;
@@ -428,12 +426,12 @@ public abstract class AStar
 		}
 	}	
     
-    private final void maybeAddNeighbor(PathNode<MapLocation> parent, MapLocation point)
+    private final void maybeAddNeighbor(PathNode parent, MapLocation point)
     {
-        final PathNode<MapLocation> newNode = new PathNode<MapLocation>( point , parent );
+        final PathNode newNode = new PathNode( point , parent );
         if ( ! closeList.contains(newNode) ) 
         {
-            final PathNode<MapLocation> existing = openMap.get(newNode);
+            final PathNode existing = openMap.get(newNode);
 
             assignCost( newNode );
 

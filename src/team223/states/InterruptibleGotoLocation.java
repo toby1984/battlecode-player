@@ -52,7 +52,7 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 			}
 
 			@Override
-			protected boolean isCloseEnoughToTarget(PathNode<MapLocation> node) {
+			protected boolean isCloseEnoughToTarget(PathNode  node) {
 				return InterruptibleGotoLocation.this.hasArrivedAtDestination( node.value  , destination );
 			}
 		};
