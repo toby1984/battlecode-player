@@ -28,6 +28,8 @@ public abstract class GotoLocation extends State {
 	
 	private final boolean invokeBeforeMove;
 	
+	private int previousStep = Integer.MAX_VALUE;
+	
 	private State tempState;
 
 	private final PathFindingResultCallback recalculatePathCallback = new PathFindingResultCallback() {
@@ -66,10 +68,10 @@ public abstract class GotoLocation extends State {
 	{
 		for ( int i = 0 ; i < currentPathSize ; i++ ) 
 		{
-			MapLocation loc = currentPath.get(i);
-			if ( loc.equals( current ) ) {
-				if ( (i+1) < currentPathSize ) {
-					return currentPath.get(i+1);
+			if ( currentPath.get(i).equals( current ) ) {
+				previousStep=i+1;
+				if ( previousStep < currentPathSize ) {
+					return currentPath.get(previousStep);
 				}
 				break;
 			} 
@@ -114,7 +116,6 @@ public abstract class GotoLocation extends State {
 				}
 			}
 			
-			final MapLocation newLocation = myLocation.add( direction );
 			if ( rc.canMove( direction ) )
 			{
 				movementFailureCount=0;				
@@ -130,7 +131,7 @@ public abstract class GotoLocation extends State {
 
 				if ( VERBOSE) System.out.println("Failed to move "+myLocation+" -> "+next+" (count: "+movementFailureCount+")");
 				
-				GameObject object = rc.senseObjectAtLocation( newLocation );
+				GameObject object = rc.senseObjectAtLocation( myLocation.add( direction ) );
 				if ( object instanceof Robot ) {
 					RobotInfo ri = rc.senseRobotInfo( (Robot) object);
 					if ( ri.team != rc.getTeam() ) 
