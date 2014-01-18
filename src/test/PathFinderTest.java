@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Random;
 
 import team223.AStar;
+import team223.RobotPlayer;
 import team223.AStar.Callback;
 import team223.AStar.Result;
 import battlecode.common.Direction;
@@ -21,9 +22,11 @@ public class PathFinderTest {
 
 	public static void main(String[] args) throws GameActionException {
 
-		final MapLocation from = new MapLocation(0,0);
-		final MapLocation to = new MapLocation(10,10);
-		
+		final MapLocation from = new MapLocation(10,10);
+		final MapLocation to = new MapLocation(10,11);
+
+		RobotPlayer.enemyHQ = new MapLocation(100,100);
+
 		RobotController rc = new MockRobotController() {
 			@Override
 			public TerrainTile senseTerrainTile(MapLocation loc) {

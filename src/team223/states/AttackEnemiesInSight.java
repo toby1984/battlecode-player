@@ -34,10 +34,12 @@ public final class AttackEnemiesInSight extends State {
 		
 		RobotAndInfo currentEnemy = Utils.pickEnemyToAttack( rc , enemies );		
 		if ( currentEnemy != null ) {
+			if ( MyConstants.DEBUG_MODE) System.out.println("Attacking "+currentEnemy);
 			activeState = new Attacking( rc , currentEnemy.robot , false );
 			activeState = activeState.perform();
 			return this;
-		}
+		} 
+		if ( MyConstants.DEBUG_MODE) System.out.println("AttackEnemiesInSight - no more enemies to attack, returning");
 		return null;
 	}
 

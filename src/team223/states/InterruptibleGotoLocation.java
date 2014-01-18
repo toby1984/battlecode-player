@@ -108,11 +108,17 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 			@Override
 			protected State recalculatePath(PathFindingResultCallback callback)
 			{
-				if ( MyConstants.DEBUG_MODE ) System.out.println("Recalculating path");
-				reset();
+				if ( MyConstants.DEBUG_MODE ) System.out.println("Recalculating path ( InterruptibleGotoLocation#foundPath() )");
+				
+				activeState = null;
 				InterruptibleGotoLocation.this.callback = callback;
+				finder.reset();
+				if ( ! setStartAndDestination( finder ) ) {
+					if ( MyConstants.DEBUG_MODE ) System.out.println("setStartAndDestination() in recalculatePath() failed");
+					finder.abort();
+				}
 				return null; // MUST RETURN NULL since GotoLocation#perform() and NOT the outer "this" InterruptibleGotoLocation instance.
-				// This method was was invoked by "activeState = activeState.perform() in InterruptibleGotoLocation#perform() ,
+				// This method was invoked by "activeState = activeState.perform() in InterruptibleGotoLocation#perform() ,
 				// returning the outer instance would lead to a StackOverflow / infinite recursion
 			}
 		};		
@@ -148,12 +154,6 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 		}
 	}
 	
-	protected void reset() {
-		activeState = null;
-		finder.reset();
-		setStartAndDestination( finder );
-	}
-
 	@Override
 	public final State perform() throws GameActionException 
 	{

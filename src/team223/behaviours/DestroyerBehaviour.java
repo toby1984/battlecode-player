@@ -18,6 +18,7 @@ import battlecode.common.MapLocation;
 import battlecode.common.MovementType;
 import battlecode.common.Robot;
 import battlecode.common.RobotController;
+import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 
 public final class DestroyerBehaviour extends RobotBehaviour {
@@ -55,7 +56,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 			}
 		}
 		
-		if ( state instanceof Attacking ) {
+		if ( state instanceof Attacking || state instanceof AttackEnemiesInSight) {
 			state = state.perform();
 			return;
 		}		
@@ -64,6 +65,8 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 			state = state.perform();
 			return;
 		}
+		
+		if ( MyConstants.DEBUG_MODE ) { System.out.println("Sensing enemies, current state: "+state); }
 		
 		if ( enemies == null ) {
 			enemies = rc.senseNearbyGameObjects( Robot.class , MyConstants.SOLDIER_SEEK_ENEMY_RANGE_SQUARED , RobotPlayer.enemyTeam );
@@ -83,15 +86,13 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 				return;
 			} 
 			
-			if ( MyConstants.DEBUG_MODE ) { System.out.println("Enemy too far away, calculating path to enemy "+closestEnemy.robot ); }
+			if ( MyConstants.DEBUG_MODE ) { System.out.println("Enemy too far away, calculating path to enemy "+closestEnemy.robot+" at "+closestEnemy.info.location ); }
 			
 			state = new InterruptibleGotoLocation(rc , MovementType.RUN) {
 
 				@Override
 				protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
-					final int dx = Math.abs( dstLoc.x - current.x );
-					final int dy = Math.abs( dstLoc.y - current.y );
-					return dx <= 1 && dy <= 1;					
+					return current.equals(dstLoc);
 				}
 				
 				@Override
@@ -104,6 +105,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 				{
 					Robot[] enemies = rc.senseNearbyGameObjects( Robot.class , RobotType.SOLDIER.attackRadiusMaxSquared , RobotPlayer.enemyTeam );
 					if ( enemies.length > 0 ) {
+						if ( MyConstants.DEBUG_MODE ) { System.out.println("Enemies in attack range , interrupting path finding to enemy"); }
 						return new AttackEnemiesInSight(rc);
 					}
 					return null;
@@ -112,8 +114,18 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 				@Override
 				public boolean setStartAndDestination(AStar finder) 
 				{
-					finder.setRoute( rc.getLocation() , closestEnemy.info.location );
-					return true;
+					if ( rc.canSenseObject( closestEnemy.robot ) ) 
+					{
+						try 
+						{
+							RobotInfo ri = rc.senseRobotInfo( closestEnemy.robot );
+							finder.setRoute( rc.getLocation() , ri.location );
+							return true;							
+						} catch (GameActionException e) {
+							e.printStackTrace();
+						}
+					}
+					return false;
 				}
 			};
 			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }			
@@ -124,13 +136,12 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 		// home-in on enemy HQ
 		if ( RobotPlayer.enemyHQ.distanceSquaredTo( rc.getLocation() ) > MyConstants.SOLIDER_HOMEIN_ON_HQ_DISTANCE_SQUARED ) 
 		{
+			if ( MyConstants.DEBUG_MODE ) System.out.println("Homing in on enemy HQ");			
 			state = new InterruptibleGotoLocation(rc , MovementType.RUN) {
 
 				@Override
 				protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
-					final int dx = Math.abs( dstLoc.x - current.x );
-					final int dy = Math.abs( dstLoc.y - current.y );
-					return dx <= 1 && dy <= 1;					
+					return current.equals(dstLoc);
 				}
 				
 				@Override
@@ -143,6 +154,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 				{
 					Robot[] enemies = rc.senseNearbyGameObjects( Robot.class , RobotType.SOLDIER.attackRadiusMaxSquared , RobotPlayer.enemyTeam );
 					if ( enemies.length > 0 ) {
+						if ( MyConstants.DEBUG_MODE ) System.out.println("Interrupting path finding to enemy HQ, enemies in range.");
 						return new AttackEnemiesInSight(rc);
 					}
 					return null;
@@ -167,6 +179,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 		} 
 		else 
 		{
+			if ( MyConstants.DEBUG_MODE ) System.out.println("Wandering");					
 			Direction d = Utils.randomMovementDirection(rc);
 			if ( d != Direction.NONE ) {
 				if ( rc.getLocation().add( d ).distanceSquaredTo( RobotPlayer.enemyHQ ) > RobotType.HQ.attackRadiusMaxSquared ) {

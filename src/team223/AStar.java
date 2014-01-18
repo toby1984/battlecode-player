@@ -207,6 +207,8 @@ public abstract class AStar
 			throw new IllegalStateException("Cannot continue (interrupted: "+isInterrupted()+" , started: "+started+" , finished: "+finished+" , aborted: "+aborted);
 		}
 		
+		if ( MyConstants.DEBUG_MODE) System.out.println("Continueing to find path "+start+" -> "+destination);
+		
     	PathNode current = interruptedNode;
 		interruptedNode = null;    		
 		mainLoop(current);
@@ -224,6 +226,7 @@ public abstract class AStar
 		
     	iterationCount = INTERRUPT_CHECK_INTERVAL; 
     	interruptedNode = null;
+    	
     	aborted = false;
         finished = false;
         started = false;	
@@ -233,9 +236,15 @@ public abstract class AStar
         closeList = new HashSet<PathNode>();        
 	}
 	
+	public void abort() 
+	{
+		this.aborted = true;
+		this.finished = true;
+	}
+	
     public final void findPath(Callback callback) throws GameActionException 
     {
-    	if ( isFinished() || isStarted() ) {
+    	if ( isFinished() || isStarted() || isAborted() ) {
     		throw new IllegalStateException("You need to call reset() before starting a new search");
     	}
     	
@@ -254,7 +263,13 @@ public abstract class AStar
         	searchFinished( result );
             return;
         }
-    	
+        
+        if ( ! isWalkable( this.destination ) ) {
+    		if ( MyConstants.DEBUG_MODE) System.out.println("Destination "+this.destination+" is not walkable");
+        	searchFinished( null );
+        	return;
+        }
+        
     	final PathNode start = new PathNode( this.start );
     	
         assignCost( start );
@@ -277,7 +292,7 @@ public abstract class AStar
     	else 
     	{
 			if ( VERBOSE ) {
-				System.out.println("Search failed.");
+				System.out.println("Search failed (aborted: "+aborted+")");
 			}
     		callback.foundNoPath();
     	}
@@ -289,10 +304,6 @@ public abstract class AStar
     
     private void mainLoop(PathNode current) throws GameActionException 
     {
-		if ( VERBOSE ) {
-			System.out.println("Continueing/starting search at node "+current);
-		}
-		
 		if ( DEBUG_BYTECODES_USED ) {
 			currentRound = Clock.getRoundNum();
 			byteCodesUsed = Clock.getBytecodeNum();
@@ -300,6 +311,11 @@ public abstract class AStar
 		
         while ( true ) 
         {
+        	if ( aborted ) {
+        		searchFinished(null);
+        		return;
+        	}
+        	
         	scheduleNeighbors( current );
 
             if ( openList.isEmpty() ) {
@@ -369,8 +385,7 @@ public abstract class AStar
     private void assignCost(PathNode current) 
     {
         final float movementCost = calcMovementCost(current);
-        final float estimatedCost = calcEstimatedCost( current );
-        current.f( movementCost + estimatedCost );
+        current.f( movementCost + calcEstimatedCost( current ) );
         current.g( movementCost );
     }
     

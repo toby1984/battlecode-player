@@ -62,6 +62,7 @@ public abstract class GotoLocation extends State {
 		currentPath = path;
 		currentPathSize = path.size();
 		destination = path.get( currentPathSize-1 );
+		if ( VERBOSE ) System.out.println("setNewPath(): "+path);
 	}
 
 	private MapLocation nextStep(MapLocation current) 
@@ -93,6 +94,7 @@ public abstract class GotoLocation extends State {
 		
 		final MapLocation myLocation = rc.getLocation();
 		if ( hasArrivedAtDestination( myLocation , destination ) ) {
+			if ( VERBOSE) System.out.println("Arrived at destination "+destination);
 			return null;
 		} 
 
@@ -108,6 +110,7 @@ public abstract class GotoLocation extends State {
 			{
 				tempState = beforeMove();
 				if ( tempState != null ) {
+					if ( VERBOSE) System.out.println("beforeMove() returned "+tempState);
 					tempState = tempState.perform();
 					return this;
 				}
@@ -134,6 +137,8 @@ public abstract class GotoLocation extends State {
 				GameObject object = rc.senseObjectAtLocation( myLocation.add( direction ) );
 				if ( object instanceof Robot ) {
 					RobotInfo ri = rc.senseRobotInfo( (Robot) object);
+					if ( VERBOSE) System.out.println("Something is in the way: "+ri.type+" , Team "+ri.team);
+					
 					if ( ri.team != rc.getTeam() ) 
 					{
 						switch( ri.type ) {
