@@ -26,11 +26,11 @@ public abstract class AStar
     public static final int INTERRUPT_CHECK_INTERVAL = 3;
     
     // nodes to check
-    private final Map<PathNode<MapLocation>,PathNode<MapLocation>> openMap = new HashMap<PathNode<MapLocation>, PathNode<MapLocation>>(2000);
-    private final PriorityQueue<PathNode<MapLocation>> openList = new PriorityQueue<PathNode<MapLocation>>(2000);
+    private HashMap<PathNode<MapLocation>,PathNode<MapLocation>> openMap = new HashMap<PathNode<MapLocation>, PathNode<MapLocation>>(2000);
+    private PriorityQueue<PathNode<MapLocation>> openList = new PriorityQueue<PathNode<MapLocation>>(2000);
 
     // nodes ruled out
-    private final Set<PathNode<MapLocation>> closeList = new HashSet<PathNode<MapLocation>>();
+    private HashSet<PathNode<MapLocation>> closeList = new HashSet<PathNode<MapLocation>>();
 	
     protected MapLocation start;
     protected MapLocation destination;
@@ -231,9 +231,9 @@ public abstract class AStar
         finished = false;
         started = false;	
         
-    	openMap.clear();
-    	openList.clear();
-    	closeList.clear();        
+        openMap = new HashMap<PathNode<MapLocation>, PathNode<MapLocation>>(2000);
+        openList = new PriorityQueue<PathNode<MapLocation>>(2000);
+        closeList = new HashSet<PathNode<MapLocation>>();        
 	}
 	
     public void findPath(Callback callback) throws GameActionException 
