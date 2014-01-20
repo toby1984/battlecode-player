@@ -84,12 +84,6 @@ public class InterruptibleGotoLocationTest {
 		State currentState = new InterruptibleGotoLocation(rc,MovementType.RUN ,-1 ) {
 
 			@Override
-			public boolean isWalkable(MapLocation loc) throws GameActionException 
-			{
-				return true;
-			}
-
-			@Override
 			protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
 				return current.equals( dstLoc );
 			}

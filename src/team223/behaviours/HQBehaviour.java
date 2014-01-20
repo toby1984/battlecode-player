@@ -1,20 +1,9 @@
 package team223.behaviours;
 
-import team223.FastRandom;
-import team223.MyConstants;
-import team223.RobotBehaviour;
-import team223.RobotPlayer;
-import team223.Utils;
+import team223.*;
 import team223.Utils.RobotAndInfo;
 import team223.states.Attacking;
-import battlecode.common.Direction;
-import battlecode.common.GameActionException;
-import battlecode.common.GameConstants;
-import battlecode.common.MapLocation;
-import battlecode.common.Robot;
-import battlecode.common.RobotController;
-import battlecode.common.RobotType;
-import battlecode.common.TerrainTile;
+import battlecode.common.*;
 
 public final class HQBehaviour extends RobotBehaviour {
 
@@ -38,17 +27,13 @@ public final class HQBehaviour extends RobotBehaviour {
 	public void perform() throws GameActionException 
 	{
 		// check if a robot is spawnable and spawn one if it is
-		if ( ! rc.isActive() ) {
-			return;
-		}
-		
-		if ( state instanceof Attacking) {
+		if ( state != null ) {
 			state = state.perform();
 			return;
 		}
 		
 		final Robot[] enemies = rc.senseNearbyGameObjects( Robot.class , RobotType.HQ.attackRadiusMaxSquared , RobotPlayer.enemyTeam );
-		RobotAndInfo enemy = Utils.pickEnemyToAttack( rc , enemies );
+		RobotAndInfo enemy = Utils.pickEnemyToAttack( rc , enemies , null );
 		if ( enemy != null ) 
 		{
 			state = new Attacking( rc , enemy.robot, false );
@@ -58,7 +43,7 @@ public final class HQBehaviour extends RobotBehaviour {
 			return;
 		}
 		
-		if ( rc.senseRobotCount() < GameConstants.MAX_ROBOTS ) 
+		if ( rc.senseRobotCount() < GameConstants.MAX_ROBOTS && rc.isActive() ) 
 		{
 			// spawn robot at random location
 			for ( int retry = 4 ; retry > 0 ; retry-- ) 

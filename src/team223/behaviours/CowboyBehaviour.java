@@ -1,30 +1,12 @@
 package team223.behaviours;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
-import team223.AStar;
+import team223.*;
 import team223.AStar.TimeoutResult;
-import team223.MyConstants;
-import team223.RobotBehaviour;
-import team223.RobotPlayer;
-import team223.Utils;
-import team223.states.AttackEnemiesInSight;
-import team223.states.Fleeing;
-import team223.states.InterruptibleGotoLocation;
-import battlecode.common.Clock;
-import battlecode.common.Direction;
-import battlecode.common.GameActionException;
-import battlecode.common.GameConstants;
-import battlecode.common.GameObject;
-import battlecode.common.MapLocation;
-import battlecode.common.MovementType;
-import battlecode.common.Robot;
-import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
-import battlecode.common.RobotType;
+import team223.Utils.RobotAndInfo;
+import team223.states.*;
+import battlecode.common.*;
 
 public final class CowboyBehaviour extends RobotBehaviour {
 
@@ -131,19 +113,14 @@ public final class CowboyBehaviour extends RobotBehaviour {
 			Utils.shuffle( this.locations );				
 		}
 
-		if ( ! rc.isActive() || rc.getType() == RobotType.PASTR ) {
-			return;
-		}
-
 		if ( state instanceof Fleeing ) {
 			state = state.perform();
 			return;
 		}
 
 		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) {
-			state = new Fleeing(rc);
+			state = new Fleeing(rc).perform();
 			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
-			state = state.perform(  );
 			return;
 		}
 
@@ -154,16 +131,11 @@ public final class CowboyBehaviour extends RobotBehaviour {
 		}
 
 		Robot[] enemies = rc.senseNearbyGameObjects( Robot.class , RobotType.SOLDIER.attackRadiusMaxSquared , RobotPlayer.enemyTeam );
-		if ( enemies.length > 0 ) 
+		RobotAndInfo enemyToAttack = Utils.pickEnemyToAttack( rc , enemies , null );
+		if ( enemyToAttack != null ) 
 		{
-			for ( int i = 0 ; i < enemies.length ; i++ ) {
-				RobotInfo ri = rc.senseRobotInfo( enemies[i] );
-				if ( ri.type == RobotType.PASTR || ri.type == RobotType.SOLDIER ) {
-					state = new AttackEnemiesInSight(rc);
-					if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }					
-					return;
-				}
-			}
+			state = new Attacking(rc , enemyToAttack.robot , true ).perform();
+			return;
 		}
 
 		if ( ! pathFindingMode(rc ) ) {
@@ -184,6 +156,9 @@ public final class CowboyBehaviour extends RobotBehaviour {
 					// at destination, construct pastr
 					if ( VERBOSE ) {
 						System.out.println("Reached destination "+oldState.getDestination()+" , building PASTR");	
+					}
+					while ( ! rc.isActive() ) {
+						rc.yield();
 					}
 					rc.construct( RobotType.PASTR );
 					return true;
@@ -233,7 +208,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 		
 		currentDestination = loc;
 		
-		state = new InterruptibleGotoLocation( rc , MovementType.SNEAK , MyConstants.COWBOY_PATH_FINDING_TIMEOUT_ROUNDS) {
+		state = new InterruptibleGotoLocation( rc , MovementType.SNEAK , 30) {
 
 			@Override
 			protected boolean hasArrivedAtDestination(MapLocation current,MapLocation dstLoc) {
@@ -250,7 +225,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 			public TimeoutResult onTimeout() {
 				return TimeoutResult.ABORT;
 			}
-		};
+		}.perform();
 	}
 
 	private boolean isTerminallyOccupied(MapLocation loc,RobotController rc) throws GameActionException 
@@ -323,6 +298,9 @@ public final class CowboyBehaviour extends RobotBehaviour {
 
 			if ( construct ) {
 				if ( VERBOSE ) System.out.println("Starting PASTR construction");
+				while ( ! rc.isActive() ) {
+					rc.yield();
+				}				
 				rc.construct( RobotType.PASTR );
 				return;
 			}
@@ -364,7 +342,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 			toMove = d;
 		}
 
-		if ( toMove != null ) 
+		if ( toMove != null && rc.isActive() ) 
 		{
 			rc.sneak(d);
 		}		

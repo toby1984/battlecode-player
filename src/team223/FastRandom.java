@@ -159,6 +159,16 @@ public final class FastRandom
         this.currentSeed = nextseed;
         return (int)(nextseed >>> (48 - bits));
     }
+    
+//    protected int next(int nbits) {
+//    	long x = currentSeed;
+//    	x ^= (x << 21);
+//    	x ^= (x >>> 35);
+//    	x ^= (x << 4);
+//    	currentSeed = x;
+//    	x &= ((1L << nbits) - 1);
+//    	return (int) x;
+//    }    
 
     /**
      * Generates random bytes and places them into a user-supplied

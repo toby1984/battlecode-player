@@ -41,8 +41,29 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 		finder = new AStar(rc,pathFindingTimeout) {
 
 			@Override
-			public boolean isWalkable(MapLocation loc) throws GameActionException {
-				return InterruptibleGotoLocation.this.isWalkable( loc );
+			public boolean isWalkable(MapLocation loc) throws GameActionException 
+			{
+				if ( rc.canSenseSquare(loc) ) 
+				{
+					Robot object = (Robot) rc.senseObjectAtLocation( loc );
+					if ( object != null ) 
+					{
+						RobotInfo robot = rc.senseRobotInfo( object );
+						switch( robot.type) {
+							case HQ:
+								return false;
+							case NOISETOWER:
+								return robot.team != rc.getTeam();
+							case SOLDIER:
+								// enemies will be killed, friendlies will hopefully go out of the way...
+								return robot.team != rc.getTeam();
+							case PASTR:
+								return robot.team != rc.getTeam();
+							default:
+						}
+					}
+				}
+				return true;				
 			}
 
 			@Override
@@ -102,9 +123,9 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 			protected State beforeMove() {
 				return InterruptibleGotoLocation.this.beforeEachMove();
 			}
-
+			
 			@Override
-			protected State recalculatePath(PathFindingResultCallback callback)
+			protected State recalculatePath(PathFindingResultCallback callback) throws GameActionException
 			{
 				if ( MyConstants.DEBUG_MODE ) System.out.println("Recalculating path ( InterruptibleGotoLocation#foundPath() )");
 				
@@ -148,7 +169,11 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 			}
 		} finally {
 			callback = null;
-			foundNoPathHook();
+			try {
+				foundNoPathHook();
+			} catch (GameActionException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -198,7 +223,7 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 	protected void foundPathHook(List<MapLocation> path) {
 	}
 	
-	protected void foundNoPathHook() {
+	protected void foundNoPathHook() throws GameActionException {
 	}	
 	
 	public State onLowRobotHealth(double currentRobotHealth) 
@@ -214,32 +239,7 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 		return new AttackEnemiesInSight(rc);				
 	}		
 
-	public boolean isWalkable(MapLocation loc) throws GameActionException 
-	{
-		if ( rc.canSenseSquare(loc) ) 
-		{
-			GameObject object = rc.senseObjectAtLocation( loc );
-			if ( object instanceof Robot) 
-			{
-				RobotInfo robot = rc.senseRobotInfo( (Robot) object );
-				switch( robot.type) {
-					case HQ:
-						return false;
-					case NOISETOWER:
-						return robot.team != rc.getTeam();
-					case SOLDIER:
-						return true; // enemies will be killed, friendlies will hopefully go out of the way...
-					case PASTR:
-						return robot.team != rc.getTeam();
-					default:
-						return true;
-				}
-			}
-		}
-		return true;
-	}
-
 	protected abstract boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc);	
 
-	public abstract boolean setStartAndDestination(AStar finder,boolean retry);
+	public abstract boolean setStartAndDestination(AStar finder,boolean retry) throws GameActionException;
 }

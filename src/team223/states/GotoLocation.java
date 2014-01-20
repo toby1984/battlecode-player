@@ -104,6 +104,10 @@ public abstract class GotoLocation extends State {
 			return null;
 		} 
 
+		if ( ! rc.isActive() ) {
+			rc.yield();
+		}
+		
 		MapLocation next = nextStep( myLocation );
 		if ( next != null ) 
 		{
@@ -127,22 +131,26 @@ public abstract class GotoLocation extends State {
 			
 			if ( rc.canMove( direction ) )
 			{
-				movementFailureCount=0;				
-				if ( movementType == MovementType.RUN ) {
-					rc.move( direction );
-				} else {
-					rc.sneak( direction );
+				movementFailureCount=0;		
+				if ( rc.isActive() ) {
+					if ( movementType == MovementType.RUN ) {
+						rc.move( direction );
+					} else {
+						rc.sneak( direction );
+					}
 				}
 			} 
 			else 
 			{
 				movementFailureCount++;
 
-				if ( VERBOSE) System.out.println("Failed to move "+myLocation+" -> "+next+" (count: "+movementFailureCount+")");
+				if ( VERBOSE) System.out.println("Failed to move "+rc.getLocation()+" -> "+next+" (count: "+movementFailureCount+")");
 				
-				GameObject object = rc.senseObjectAtLocation( myLocation.add( direction ) );
-				if ( object instanceof Robot ) {
-					RobotInfo ri = rc.senseRobotInfo( (Robot) object);
+				// check what's blocking our way
+				Robot object = (Robot) rc.senseObjectAtLocation( myLocation.add( direction ) );
+				if ( object != null ) 
+				{
+					RobotInfo ri = rc.senseRobotInfo( object);
 					if ( VERBOSE) System.out.println("Something is in the way: "+ri.type+" , Team "+ri.team);
 					
 					if ( ri.team != rc.getTeam() ) 
@@ -161,7 +169,7 @@ public abstract class GotoLocation extends State {
 				if ( movementFailureCount > MyConstants.MAX_PATH_MOVEMENT_FAILURES ) 
 				{
 					// 	movement failed too many times, some new obstacle is blocking us...recalculate path					
-					if ( VERBOSE ) System.out.println("Re-calculating path "+myLocation+" -> "+next);						
+					if ( VERBOSE ) System.out.println("Re-calculating path "+rc.getLocation()+" -> "+next);						
 					movementFailureCount = 0;
 					return recalculatePath( recalculatePathCallback );
 				}
@@ -170,10 +178,11 @@ public abstract class GotoLocation extends State {
 		} 
 
 		if ( VERBOSE) System.out.println("ERROR: At "+myLocation+" , no next step on path "+currentPath+" , recalculating path" );
+		movementFailureCount = 0;
 		return recalculatePath( recalculatePathCallback );
 	}
 
-	protected abstract State recalculatePath(PathFindingResultCallback callback);
+	protected abstract State recalculatePath(PathFindingResultCallback callback) throws GameActionException;
 
 	protected abstract boolean hasArrivedAtDestination(MapLocation current,MapLocation dstLoc);
 

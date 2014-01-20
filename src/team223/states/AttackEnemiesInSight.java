@@ -32,11 +32,10 @@ public final class AttackEnemiesInSight extends State {
 		if ( VERBOSE ) System.out.println("Sensed "+enemies.length+" enemies in attack range");			
 		if ( MyConstants.DEBUG_MODE) System.out.println("AttackEnemiesInSight - sensed "+enemies.length+" enemies around "+rc.getLocation());
 		
-		RobotAndInfo currentEnemy = Utils.pickEnemyToAttack( rc , enemies );		
+		RobotAndInfo currentEnemy = Utils.pickEnemyToAttack( rc , enemies , null );		
 		if ( currentEnemy != null ) {
 			if ( MyConstants.DEBUG_MODE) System.out.println("Attacking "+currentEnemy);
-			activeState = new Attacking( rc , currentEnemy.robot , false );
-			activeState = activeState.perform();
+			activeState = new Attacking( rc , currentEnemy.robot , false ).perform();
 			return this;
 		} 
 		if ( MyConstants.DEBUG_MODE) System.out.println("AttackEnemiesInSight - no more enemies to attack, returning");

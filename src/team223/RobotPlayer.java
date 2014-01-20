@@ -5,15 +5,19 @@ import battlecode.common.*;
 
 public class RobotPlayer 
 {
-	public static volatile FastRandom rnd;
+	public static FastRandom rnd;
 	
-	private static volatile RobotBehaviour behaviour;
+	private static RobotBehaviour behaviour;
 	
 	public static MapLocation myHQ;
 	public static MapLocation enemyHQ;
 	
 	public static Team myTeam;
 	public static Team enemyTeam;
+	
+	public static boolean spawnAreaCleared;
+	
+	public static int pathFindingMaxTimeout;
 	
 	public static int id;
 	
@@ -29,6 +33,16 @@ public class RobotPlayer
 			{
 				if ( rnd == null ) 
 				{
+					
+					final int mapArea = rc.getMapWidth()*rc.getMapHeight();
+					
+					if ( mapArea >= (40*40 ) ) {
+						pathFindingMaxTimeout = 200;
+					} else {
+						pathFindingMaxTimeout = 30;
+					}
+					System.out.println("Map size: "+rc.getMapWidth()+" x "+rc.getMapHeight());
+					
 					final Integer id = rc.getRobot().getID(); 
 					
 					myTeam = rc.getTeam();
@@ -43,19 +57,25 @@ public class RobotPlayer
 					
 					rnd = new FastRandom( (long) (31+31*id.intValue()) );
 					
-					stepsToBackOff = 5 + rnd.nextInt( 5 );
-				}
-				
-				if ( behaviour == null ) 
-				{
-					if ( rc.getType() == RobotType.HQ ) {
+					stepsToBackOff = 2 + rnd.nextInt( 2 );
+					
+					if ( rc.getType() == RobotType.HQ ) 
+					{
 						behaviour = new HQBehaviour( rc );
 						if ( MyConstants.DEBUG_MODE ) {
 							System.out.println("Robot is a HQ");
 						}
-						rc.setIndicatorString( 0 , "HQ");						
+						rc.setIndicatorString( 0 , "HQ");			
+						spawnAreaCleared = true;
 					} 
-					else if ( rc.getType() != RobotType.PASTR ) 
+					else if ( rc.getType() == RobotType.PASTR ) 
+					{
+						behaviour = new PastrBehaviour(rc);
+						spawnAreaCleared = true;
+						rc.yield();
+						continue;
+					} 
+					else 
 					{
 						int data = rc.readBroadcast( HQBehaviour.HQ_BROADCAST_CHANNEL );
 						switch( data ) {
@@ -84,30 +104,32 @@ public class RobotPlayer
 								throw new RuntimeException("Failed to read broadcast from HQ ?");
 						}
 					}
-					rc.yield();
-					continue;
 				}
 				
-				if ( invocationCount > stepsToBackOff || rc.getType() != RobotType.SOLDIER ) 
+				if ( spawnAreaCleared ) 
 				{
 					behaviour.perform();
 				} 
 				else 
 				{
 					// clear spawn area
-					invocationCount++;					
-					MapLocation myLocation = rc.getLocation();
-					Direction opposite = myLocation.directionTo( myHQ ).opposite();
-					Direction m = null;
-					if ( rc.canMove( opposite ) ) {
-						 m = opposite;
-					} else if ( rc.canMove( opposite.rotateLeft() ) ) {
-						 m = opposite.rotateLeft();
-					} else if ( rc.canMove( opposite.rotateRight() ) ) {
-						m = opposite.rotateRight();
+					spawnAreaCleared = invocationCount++ > stepsToBackOff;
+					
+					while ( ! rc.isActive() ) {
+						rc.yield();
 					}
-					if ( m != null && rc.isActive() ) {
-						rc.sneak(m);
+					Direction opposite = rc.getLocation().directionTo( myHQ ).opposite();
+					if ( rc.canMove( opposite ) ) 
+					{
+						rc.sneak( opposite );
+					} 
+					else if ( rc.canMove( opposite.rotateLeft() ) ) 
+					{ 
+						rc.sneak( opposite.rotateLeft() );
+					} 
+					else if ( rc.canMove( opposite.rotateRight() ) ) 
+					{
+						rc.sneak( opposite.rotateRight() );
 					}
 				}
 			} 

@@ -31,7 +31,9 @@ public final class Attacking extends State {
 		MapLocation enemyLocation = rc.senseLocationOf( enemy );
 		if ( rc.canAttackSquare( enemyLocation ) ) 
 		{
-			rc.attackSquare( enemyLocation );
+			if ( rc.isActive() ) {
+				rc.attackSquare( enemyLocation );
+			}
 			return this;
 		} 
 		
@@ -44,7 +46,9 @@ public final class Attacking extends State {
 			{
 				// make sure not to get in firing range of enemy HQ
 				if ( myLocation.add( direction ).distanceSquaredTo( RobotPlayer.enemyHQ ) > RobotType.HQ.attackRadiusMaxSquared ) {
-					rc.move( direction );
+					if ( rc.isActive() ) {
+						rc.move( direction );
+					}
 					return this;
 				}
 				return null;

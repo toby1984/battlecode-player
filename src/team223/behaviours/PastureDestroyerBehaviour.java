@@ -1,9 +1,7 @@
 package team223.behaviours;
 
-import team223.AStar;
+import team223.*;
 import team223.AStar.TimeoutResult;
-import team223.MyConstants;
-import team223.RobotBehaviour;
 import team223.states.AttackEnemiesInSight;
 import team223.states.Fleeing;
 import team223.states.InterruptibleGotoLocation;
@@ -26,10 +24,6 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 	@Override
 	public void perform() throws GameActionException 
 	{
-		if ( ! rc.isActive() ) {
-			return;
-		}
-
 		if ( state instanceof Fleeing ) 
 		{
 			state = state.perform();
@@ -37,9 +31,8 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 		} 
 
 		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) {
-			state = new Fleeing( rc );
+			state = new Fleeing( rc ).perform();
 			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }			
-			state = state.perform();
 			return;
 		}
 		
@@ -50,7 +43,7 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 			{
 				// destination reached
 				if ( VERBOSE ) System.out.println("Pasture destroyer is at "+rc.getLocation() );
-				state = new AttackEnemiesInSight(rc);
+				state = new AttackEnemiesInSight(rc).perform();
 				if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
 			}
 			return;			
@@ -61,24 +54,17 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 			return;
 		}
 
-		if ( MyConstants.DEBUG_MODE ) System.out.println("Looking for pastures...");	
-
 		final MapLocation[] pastrLocations = rc.sensePastrLocations( rc.getTeam().opponent() );
+
 		if (pastrLocations.length == 0 ) {
 			if ( MyConstants.DEBUG_MODE ) {
-				System.out.println("No pastures found to destroy");
 				rc.setIndicatorString( 1 , "No pastures to destroy" );
 			}
 			return;
 		}
 
-		if ( MyConstants.DEBUG_MODE ) System.out.println("Pastures found: "+pastrLocations.length);
-		if ( pastrLocations.length == 0 ) {
-			return;
-		}
-
 		final MapLocation myLocation = rc.getLocation();
-		final MapLocation target = pickClosestTarget(myLocation,pastrLocations);
+		final MapLocation target = pickClosestTarget(rc,myLocation,pastrLocations);
 		if ( target == null ) {
 			if ( MyConstants.DEBUG_MODE) System.out.println("No (more) pastures");
 			return;
@@ -86,7 +72,7 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 
 		if ( rc.canAttackSquare( target ) ) {
 			if ( MyConstants.DEBUG_MODE) System.out.println("Attacking pastures (enemies) in sight , available target: "+target);					
-			state = new AttackEnemiesInSight(rc);
+			state = new AttackEnemiesInSight(rc).perform();
 			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
 			return;
 		} 
@@ -95,9 +81,12 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 		if ( rc.canMove( d ) ) {
 			int distanceSquared = myLocation.add( d ).distanceSquaredTo( target );
 			if ( distanceSquared <= RobotType.SOLDIER.attackRadiusMaxSquared ) {
-				if ( VERBOSE ) System.out.println("Sneaking to "+myLocation.add( d )+" of target "+target+" brings me to distance "+distanceSquared);							
+				if ( VERBOSE ) System.out.println("Sneaking to "+myLocation.add( d )+" of target "+target+" brings me to distance "+distanceSquared);
+				while ( ! rc.isActive() ) {
+					rc.yield();
+				}
 				rc.sneak( d );
-				state = new AttackEnemiesInSight(rc);
+				state = new AttackEnemiesInSight(rc).perform();
 				if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
 				return;
 			}
@@ -122,7 +111,7 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 				{
 					MapLocation[] pastrLocations = rc.sensePastrLocations( rc.getTeam().opponent() );
 					if ( pastrLocations.length != 0 ) {
-						MapLocation newTarget = pickClosestTarget(myLocation,pastrLocations);
+						MapLocation newTarget = pickClosestTarget(rc,myLocation,pastrLocations);
 						if ( newTarget != null ) {
 							finder.setRoute( rc.getLocation() , newTarget );
 							return true;
@@ -139,11 +128,11 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 			public TimeoutResult onTimeout() {
 				return TimeoutResult.ABORT;
 			}
-		};
+		}.perform();
 		if ( MyConstants.DEBUG_MODE ) behaviourStateChanged(); 
 	}
 
-	private MapLocation pickClosestTarget(MapLocation location,MapLocation[] pastrLocations) 
+	private MapLocation pickClosestTarget(RobotController rc,MapLocation location,MapLocation[] pastrLocations) 
 	{
 		MapLocation closest = null;		
 		int index = -1;
@@ -161,6 +150,10 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 		}
 		if ( closest != null ) {
 			pastrLocations[index]=null;
+			MapLocation result = Utils.findRandomLocationNear( rc , closest, 1 , MyConstants.SOLDIER_ATTACK_RANGE );
+			if ( result != null ) {
+				return result;
+			}
 			return closest;
 		}			
 		return null;

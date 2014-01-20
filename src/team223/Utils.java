@@ -1,63 +1,65 @@
 package team223;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
-import battlecode.common.Direction;
-import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
-import battlecode.common.Robot;
-import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
-import battlecode.common.RobotType;
-import battlecode.common.TerrainTile;
+import battlecode.common.*;
 
 public class Utils {
 
-	public static final Direction[] DIRECTIONS = {Direction.NORTH, 
-		Direction.NORTH_EAST, 
-		Direction.EAST, 
+	public static final Direction[] DIRECTIONS = {
+		Direction.SOUTH, 		
+		Direction.NORTH, 
 		Direction.SOUTH_EAST, 
-		Direction.SOUTH, 
-		Direction.SOUTH_WEST, 
-		Direction.WEST, 
-		Direction.NORTH_WEST};
+		Direction.WEST,
+		Direction.NORTH_EAST,
+		Direction.EAST, 			
+		Direction.NORTH_WEST,
+		Direction.SOUTH_WEST, 		
+		};
 
-	public static MapLocation findRandomLocationNear(RobotController rc,MapLocation currentLocation,int minRadius,int maxRadius) {
+	public static MapLocation findRandomLocationNear(RobotController rc,MapLocation center,int minRadius,int maxRadius) {
 
-		final int minSquared = minRadius*minRadius;
-		final int maxSquared = maxRadius*maxRadius;
-
-		final int minX = Math.max(0, currentLocation.x - maxRadius );
-		final int minY = Math.max(0, currentLocation.y - maxRadius );
-
-		final int maxX = Math.min( rc.getMapWidth()  , currentLocation.x + maxRadius );
-		final int maxY = Math.min( rc.getMapHeight() , currentLocation.y + maxRadius );
-
-		final int dx = maxX - minX;
-		final int dy = maxY - minY;
-
-		for ( int retries = 10 ; retries > 0 ; retries-- ) 
+		final int delta = 1+(maxRadius-minRadius);
+		int retries = 10;
+		do
 		{
-			int x = minX+(int) (dx*RobotPlayer.rnd.nextFloat());
-			int y = minY+(int) (dy*RobotPlayer.rnd.nextFloat());
+			int x = RobotPlayer.rnd.nextInt(delta);
+			int y = RobotPlayer.rnd.nextInt(delta);
 			
-			float distX = x-currentLocation.x;
-			float distY = y-currentLocation.y;
-			float distSquared = distX*distX+distY*distY;
-			if ( distSquared >= minSquared && distSquared <= maxSquared) 
+			/*
+			 *  0 | 1
+			 * ---+---
+			 *  3 | 2
+			 * 
+			 */
+			final MapLocation l;
+			switch( RobotPlayer.rnd.nextInt(4) ) 
 			{
-				final MapLocation l = new MapLocation(x,y);
-				TerrainTile tileType = rc.senseTerrainTile( l );
-
-				if (  tileType == TerrainTile.NORMAL || tileType == TerrainTile.ROAD ) {
-
-					return l;
-				}
+				case 0: // Quadrant 0
+					l = new MapLocation( center.x - x,center.y - y);
+					break;
+				case 1: // Quadrant 1
+					l = new MapLocation(center.x + x,center.y - y);
+					break;
+				case 2: // Quadrant 2
+					l = new MapLocation(center.x + x, center.y + y);
+					break;
+				case 3: // Quadrant 3
+					l = new MapLocation(center.x - x,-center.y + y);
+					break;
+				default:
+					throw new RuntimeException("Unreachable code reached");
 			}
-		}
+
+			switch( rc.senseTerrainTile( l ) ) 
+			{
+				case NORMAL:
+				case ROAD:
+					return l;
+				default:
+			}
+		} while( retries-- > 0 );
+		if ( MyConstants.DEBUG_MODE ) System.out.println(">>>>>>>>>>>>>>>> Failed to find random location around ("+center+") , minRadius: "+minRadius+",maxRadius: "+maxRadius+" after 10 retries");
 		return null;
 	}
 
@@ -80,7 +82,7 @@ public class Utils {
 	{
 		Direction d = DIRECTIONS[ RobotPlayer.rnd.nextInt( DIRECTIONS.length ) ];		
 		for ( int retries = 7 ; retries > 0 ; retries-- ) {
-			if ( rc.canMove( d ) ) {
+			if ( rc.canMove( d ) && rc.getLocation().add( d ).distanceSquaredTo( RobotPlayer.enemyHQ ) > RobotType.HQ.attackRadiusMaxSquared  ) {
 				return d;
 			}
 			d = d.rotateLeft();
@@ -98,7 +100,11 @@ public class Utils {
 			arr[j] = tmp;
 		}
 	}
-
+	
+	public static void main(String[] args) {
+		
+	}
+	
 	public static Direction[] getMovementCandidateDirections(RobotController rc) 
 	{
 		MapLocation location = rc.getLocation();
@@ -189,9 +195,12 @@ public class Utils {
 		public final Robot robot;
 		public final RobotInfo info;
 		
+		public final int robotId;
+		
 		public RobotAndInfo(Robot robot, RobotInfo info) {
 			this.robot = robot;
 			this.info = info;
+			this.robotId = robot.getID();
 		}
 
 		public boolean isWithinAttackRange(MapLocation myLocation,RobotType myType) {
@@ -203,9 +212,23 @@ public class Utils {
 		{
 			return "Robot #"+robot.getID()+" ("+info.type+" , health "+info.health+" )";
 		}
-	}
 
-	public static final RobotAndInfo pickEnemyToAttack(RobotController rc,Robot[] nearbyEnemies) throws GameActionException 
+		@Override
+		public int hashCode() 
+		{
+			return robotId;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if ( obj instanceof RobotAndInfo) {
+				return ((RobotAndInfo) obj).robotId == this.robotId;
+			}
+			return false;
+		}
+	}
+	
+	public static final RobotAndInfo pickEnemyToAttack(RobotController rc,Robot[] nearbyEnemies,EnemyBlacklist enemyBlacklist) throws GameActionException 
 	{
 		if ( nearbyEnemies.length == 0 ) {
 			return null;
@@ -226,6 +249,10 @@ public class Utils {
 		for ( int i = 0 ; i < nearbyEnemies.length ; i++)
 		{
 			Robot enemy = nearbyEnemies[i];
+			if ( enemyBlacklist != null && enemyBlacklist.containsKey( enemy.getID() ) ) {
+				if ( MyConstants.DEBUG_MODE ) { System.out.println("Ignoring blacklisted enemy "+enemyBlacklist.get( enemy.getID() ) ); }
+				continue;
+			}
 			RobotInfo robotInfo = rc.senseRobotInfo( enemy );
 			switch( robotInfo.type ) 
 			{

@@ -1,25 +1,15 @@
 package team223;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.PriorityQueue;
-import java.util.Stack;
+import java.util.*;
 
-import battlecode.common.Clock;
-import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
-import battlecode.common.RobotController;
-import battlecode.common.TerrainTile;
+import battlecode.common.*;
 
 
 public abstract class AStar
 {
 	private static final boolean VERBOSE = false;
 	
-	private static final boolean DEBUG_RUNTIME = false;
+	private static final boolean DEBUG_RUNTIME = true;
 	
     public static final int INTERRUPT_CHECK_INTERVAL = 3;
     
@@ -66,7 +56,7 @@ public abstract class AStar
     {
     	public void foundPath(List<MapLocation> path);
     	
-    	public TimeoutResult onTimeout();
+    	public TimeoutResult onTimeout() throws GameActionException;
     	
     	public void foundNoPath();    	
     }
@@ -191,12 +181,6 @@ public abstract class AStar
         }
     }
     
-	private void insert(PathNode node) 
-	{
-        openMap.put(node,node);
-        openList.add( node );
-	}    
-	
 	public AStar(RobotController rc,int pathFindingTimeout) {
 		this.rc = rc;
 		this.pathFindingTimeout = pathFindingTimeout;
@@ -302,7 +286,8 @@ public abstract class AStar
         }
         
         if ( ! isWalkable( this.destination ) ) {
-    		if ( MyConstants.DEBUG_MODE) System.out.println("Destination "+this.destination+" is not walkable");
+    		// if ( MyConstants.DEBUG_MODE) 
+        	System.out.println(">>>>>>> Destination "+this.destination+" is not walkable");
         	searchFinished( null );
         	return;
         }
@@ -322,7 +307,7 @@ public abstract class AStar
     	
     	if ( result != null ) {
 			if ( DEBUG_RUNTIME ) {
-				System.out.println("*** (elapsed rounds: "+totalElapsedRounds+") Path finding finished , path length: "+result.size());
+				System.out.println("*** (elapsed rounds: "+totalElapsedRounds+") Path finding finished "+start+" -> "+destination+" , path length: "+result.size());
 			}
     		callback.foundPath( result );
     	} 
@@ -398,17 +383,18 @@ public abstract class AStar
         		
         		if ( elapsedRounds >= pathFindingTimeout ) 
         		{
-        			if ( DEBUG_RUNTIME ) System.out.println("!!! (elapsed: "+totalElapsedRounds+", timeout: "+startedInRound+") Path finding timeout *** ");
+        			if ( DEBUG_RUNTIME ) System.out.println("!!! (startedInRound: "+startedInRound+", elapsed: "+totalElapsedRounds+", timeout limit: "+pathFindingTimeout+") Path finding timeout *** ");
         			switch( callback.onTimeout() ) 
         			{
             			case ABORT:
             				if ( DEBUG_RUNTIME ) {
-            					System.out.println("!!! (Timeout,elapsed: "+totalElapsedRounds+") Aborted at node "+current);
+            					System.out.println("!!! (Timeout,elapsed: "+totalElapsedRounds+") Aborted at node "+current.value);
             				}        				
             				finished = true;
             				aborted = true;
             				interruptedNode = null;
             				return;
+            			default:
         			}
         			if ( DEBUG_RUNTIME ) System.out.println("!!! (elapsed rounds: "+totalElapsedRounds+") Path finding continues after timeout ***");
         			elapsedRounds = 0;        			
@@ -430,6 +416,7 @@ public abstract class AStar
         				}
         				interruptedNode = current;
         				return;
+        			default:
         		}
         	}            
         }    	
@@ -464,7 +451,7 @@ public abstract class AStar
 	private final float calcEstimatedCost( team223.AStar.PathNode node) 
 	{
     	// WEIGHTED A-STAR !!!
-    	return 4 * (float) Math.sqrt( destination.distanceSquaredTo(  node.value ) );
+    	return (float) (4*Math.sqrt( destination.distanceSquaredTo(  node.value ) ) );
 	}
 
 	private final void scheduleNeighbors(team223.AStar.PathNode parent) throws GameActionException 
@@ -479,13 +466,10 @@ public abstract class AStar
 				if ( dx != 0 || dy != 0 ) 
 				{
 					final MapLocation newLocation = new MapLocation(x+dx,y+dy);
-					if ( newLocation.distanceSquaredTo( RobotPlayer.enemyHQ) >= MyConstants.ENEMY_HQ_SAFE_DISTANCE_SRT ) 
+					final TerrainTile tile = rc.senseTerrainTile( newLocation );	
+					if ( ( tile == TerrainTile.NORMAL || tile == TerrainTile.ROAD ) && isWalkable( newLocation ) ) //  && newLocation.distanceSquaredTo( RobotPlayer.enemyHQ) >= MyConstants.ENEMY_HQ_SAFE_DISTANCE_SRT 
 					{
-						final TerrainTile tile = rc.senseTerrainTile( newLocation );
-						if ( ( tile == TerrainTile.NORMAL || tile == TerrainTile.ROAD ) && isWalkable( newLocation ) ) 
-						{ 
-							maybeAddNeighbor( parent , newLocation );
-						}
+						maybeAddNeighbor( parent , newLocation );							
 					}
 				}
 			}

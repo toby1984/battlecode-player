@@ -32,7 +32,9 @@ public final class Fleeing extends State {
 					d = Utils.randomMovementDirection( rc );
 					if ( d != Direction.NONE ) 
 					{
-						rc.move(d);
+						if ( rc.isActive() ) {
+							rc.move(d);
+						}
 					} else if ( MyConstants.DEBUG_MODE) System.out.println("No-where to escape?");
 					return this;
 				}
@@ -42,7 +44,9 @@ public final class Fleeing extends State {
 					if ( rc.canMove( d ) ) 
 					{
 						if ( rc.getLocation().distanceSquaredTo( RobotPlayer.enemyHQ ) > RobotType.HQ.attackRadiusMaxSquared ) {
-							rc.move( d );
+							if ( rc.isActive() ) {
+								rc.move( d );
+							}
 							return this;
 						}
 					}
