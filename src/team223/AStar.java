@@ -65,7 +65,6 @@ public abstract class AStar
     
     public interface Callback extends  PathFindingResultCallback
     {
-    	public Result checkInterrupt();
     }
     
     public final static class PathNode implements Comparable<PathNode>
@@ -73,8 +72,8 @@ public abstract class AStar
         public PathNode parent;
         public final MapLocation value;
         
-        private float f;
-        private float g;
+        public double f;
+        public double g;
         
         private final int hashcode;
         
@@ -110,11 +109,11 @@ public abstract class AStar
 			return this.value.equals( ((PathNode) obj).value );
 		}
 
-		public final void f(float value) { this.f = value; }
-        public final void g(float value) { this.g = value; }
+		public final void f(double value) { this.f = value; }
+        public final void g(double value) { this.g = value; }
 
-        public final float f() { return f; }
-        public final float g() { return g;}
+        public final double f() { return f; }
+        public final double g() { return g;}
 
         public final PathNode parent() { return parent; }
 
@@ -216,9 +215,10 @@ public abstract class AStar
 			new Exception("Cannot change route on already started search").printStackTrace();
 			throw new IllegalStateException("Cannot change route on already started search");
 		}
-		if ( MyConstants.DEBUG_MODE ) {
+		if ( MyConstants.DEBUG_MODE ) 
+		{
 			try {
-				System.out.println("setRoute(): "+from+" -> "+to+" (walkable: "+isWalkable( to )+")" );
+				System.out.println("setRoute( timeout= "+pathFindingTimeout+" ): "+from+" -> "+to+" (walkable: "+isWalkable( to )+")" );
 			} catch (GameActionException e) {
 				e.printStackTrace();
 			}
@@ -293,7 +293,7 @@ public abstract class AStar
         
     	final PathNode start = new PathNode( this.start );
     	
-        assignCost( start );
+        assignCostToStartNode( start );
         closeList.add( start );
 
 		if ( MyConstants.ASTAR_VERBOSE ) System.out.println("Starting search "+this.start+" -> "+this.destination);
@@ -361,6 +361,7 @@ public abstract class AStar
 
         		if ( MyConstants.ASTAR_DEBUG_RUNTIME ) 
         		{
+        			System.out.println("Interrupt check");
             		final int currentRound = Clock.getRoundNum();
             		int delta = ( currentRound - startedInRound);
             		
@@ -375,7 +376,7 @@ public abstract class AStar
         		
         		if ( elapsedRounds >= pathFindingTimeout ) 
         		{
-        			if ( MyConstants.ASTAR_DEBUG_RUNTIME ) System.out.println("!!! (startedInRound: "+startedInRound+", elapsed: "+totalElapsedRounds+", timeout limit: "+pathFindingTimeout+") Path finding timeout *** ");
+        			if ( MyConstants.ASTAR_DEBUG_RUNTIME ) System.out.println("!!! ( elapsed: "+totalElapsedRounds+", timeout limit: "+pathFindingTimeout+") Path finding timeout *** ");
         			switch( callback.onTimeout() ) 
         			{
             			case ABORT:
@@ -392,36 +393,22 @@ public abstract class AStar
         			elapsedRounds = 0;        			
         		}
         		
-        		switch( callback.checkInterrupt() ) 
-        		{
-        			case ABORT:
-        				if ( MyConstants.ASTAR_VERBOSE ) {
-        					System.out.println("Aborted at node "+current);
-        				}        				
-        				finished = true;
-        				aborted = true;
-        				interruptedNode = null;
-        				return;
-        			case INTERRUPT:
-        				if ( MyConstants.ASTAR_VERBOSE ) {
-        					System.out.println("Interruped at node "+current);
-        				}
-        				interruptedNode = current;
-        				return;
-        			default:
-        		}
+				if ( MyConstants.ASTAR_VERBOSE ) {
+					System.out.println("Interruped at node "+current);
+				}
+				interruptedNode = current;
+				return;
         	}            
         }    	
     }
     
     protected abstract boolean isCloseEnoughToTarget( PathNode node ); 
 
-    private void assignCost(PathNode current) 
+    private void assignCostToStartNode(PathNode current) 
     {
-        final float movementCost = calcMovementCost(current);
-        current.f( movementCost + calcEstimatedCost( current ) );
-        current.g( movementCost );
-    }
+        current.f( (float) 0 + calcEstimatedCost( current ) );
+        current.g( (float) 0 );
+    }    
     
     public final MapLocation getStart() {
 		return start;
@@ -430,20 +417,11 @@ public abstract class AStar
     public final MapLocation getDestination() {
 		return destination;
 	}
-
-	private final float calcMovementCost(team223.AStar.PathNode current) 
-	{
-        if( current.parent != null ) 
-        {
-        	return current.parent.g + (float) Math.sqrt( current.value.distanceSquaredTo( current.parent.value ) );
-        }
-        return 0;
-	}
-	
-	private final float calcEstimatedCost( team223.AStar.PathNode node) 
+    
+	private final double calcEstimatedCost( team223.AStar.PathNode node) 
 	{
     	// WEIGHTED A-STAR !!!
-    	return (float) (4*Math.sqrt( destination.distanceSquaredTo(  node.value ) ) );
+    	return 1.5*Math.sqrt( destination.distanceSquaredTo(  node.value ) );
 	}
 
 	private final void scheduleNeighbors(team223.AStar.PathNode parent) throws GameActionException 
@@ -458,13 +436,13 @@ public abstract class AStar
 				if ( dx != 0 || dy != 0 ) 
 				{
 					final MapLocation newLocation = new MapLocation(x+dx,y+dy);
-					if ( newLocation.distanceSquaredTo( RobotPlayer.enemyHQ) >= MyConstants.ENEMY_HQ_SAFE_DISTANCE_SRT ) 
+					if ( newLocation.distanceSquaredTo( RobotPlayer.enemyHQ ) >= MyConstants.ENEMY_HQ_SAFE_DISTANCE_SRT ) 
 					{
 						final TerrainTile tile = rc.senseTerrainTile( newLocation );	
-						if ( ( tile == TerrainTile.NORMAL || tile == TerrainTile.ROAD ) && isWalkable( newLocation ) ) 
+						if ( ( tile == TerrainTile.NORMAL || tile == TerrainTile.ROAD ) && isWalkable( newLocation ) )
 						{
-							maybeAddNeighbor( parent , newLocation );							
-						}
+							maybeAddNeighbor( parent , newLocation );
+						} 
 					}
 				}
 			}
@@ -478,12 +456,11 @@ public abstract class AStar
         {
             final PathNode existing = openMap.get(newNode);
 
-            final float movementCost = calcMovementCost(newNode);
-			newNode.f( movementCost + calcEstimatedCost( newNode ) );
-			newNode.g( movementCost );
-
-            if ( existing == null || newNode.g < existing.g ) // prefer shorter path
+            final double movementCost = newNode.parent.g + Math.sqrt( newNode.value.distanceSquaredTo( newNode.parent.value ) );
+            if ( existing == null || movementCost < existing.g ) // prefer shorter path
             {
+    			newNode.f = movementCost + calcEstimatedCost( newNode );
+    			newNode.g = movementCost;    			
                 openMap.put(newNode,newNode);
 				openList.add( newNode );
             }

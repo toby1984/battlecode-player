@@ -19,17 +19,14 @@ import battlecode.common.MovementType;
 import battlecode.common.Robot;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
-import battlecode.common.RobotType;
 
 public final class DestroyerBehaviour extends RobotBehaviour {
 
-	private static final int DEFAULT_HOMEIN_TIMEOUT = 30;
+	private static final int DEFAULT_HOMEIN_TIMEOUT = 1000;
 	
-	private static final int MAX_HOMEIN_TIMEOUT = 100;	
+	private static final int MAX_HOMEIN_TIMEOUT =1000;	
 
 	protected static final int UNKNOWN_HEALTH= -99999;
-	
-	private boolean checkForEnemiesAtEachStep = true;
 	
 	private final EnemyBlacklist enemyBlacklist = new EnemyBlacklist(110);
 	
@@ -58,8 +55,6 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 		
 		if ( currentTarget != null ) 
 		{
-			checkForEnemiesAtEachStep = false;
-			
 			if ( MyConstants.DEBUG_MODE ) { System.out.println("Picked enemy "+currentTarget.robot ); }	
 			
 			if ( rc.canAttackSquare( currentTarget.info.location ) ) 
@@ -93,38 +88,6 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 					return new AttackEnemiesInSight(rc);
 				}
 				
-				@Override
-				public boolean isInvokeBeforeMove() {
-					return checkForEnemiesAtEachStep;
-				}				
-				
-				@Override
-				protected State beforeEachMove() 
-				{
-					Robot[] enemies = rc.senseNearbyGameObjects( Robot.class , RobotType.SOLDIER.attackRadiusMaxSquared , RobotPlayer.enemyTeam );
-					if ( enemies.length > 0 ) 
-					{
-						if ( MyConstants.DEBUG_MODE ) { System.out.println("Enemies in attack range , interrupting path finding to enemy"); }						
-						try 
-						{
-							final RobotAndInfo enemy = Utils.pickEnemyToAttack( rc , enemies , enemyBlacklist );
-							if ( enemy != null ) 
-							{
-								if ( rc.isActive() ) {
-									rc.attackSquare( enemy.info.location );
-									rc.yield();
-								}
-								return new AttackEnemiesInSight(rc);								
-							} 
-						} 
-						catch (GameActionException e) 
-						{
-							e.printStackTrace();
-						}
-					}
-					return null;
-				}
-
 				@Override
 				public boolean setStartAndDestination(AStar finder,boolean retry) throws GameActionException 
 				{
@@ -196,22 +159,6 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 					homeInTimeout = DEFAULT_HOMEIN_TIMEOUT;
 				}
 				
-				@Override
-				public boolean isInvokeBeforeMove() {
-					return checkForEnemiesAtEachStep;
-				}
-				
-				@Override
-				protected State beforeEachMove() 
-				{
-					Robot[] enemies = rc.senseNearbyGameObjects( Robot.class , RobotType.SOLDIER.attackRadiusMaxSquared , RobotPlayer.enemyTeam );
-					if ( enemies.length > 0 ) {
-						if ( MyConstants.DEBUG_MODE ) System.out.println("Interrupting path finding to enemy HQ, enemies in range.");
-						return new AttackEnemiesInSight(rc);
-					}
-					return null;
-				}		
-				
 				protected void foundNoPathHook() throws GameActionException 
 				{
 					Direction d = Utils.randomMovementDirection(rc);
@@ -250,7 +197,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 				@Override
 				public TimeoutResult onTimeout() throws GameActionException 
 				{
-					homeInTimeout=Math.min(MAX_HOMEIN_TIMEOUT , (int) (homeInTimeout*1.5f ) );	
+					homeInTimeout=Math.min(MAX_HOMEIN_TIMEOUT , (int) (homeInTimeout*3f ) );	
 					if ( MyConstants.DEBUG_MODE ) System.out.println("Home-in timeout is now "+homeInTimeout);
 					
 					Direction d = Utils.randomMovementDirection(rc);
@@ -269,13 +216,17 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 		} 
 		else 
 		{
-			wander();
+			if ( rc.getActionDelay() < 1 ) 
+			{
+				wander();
+			}
 		}
 	}
 	
 	private void wander() throws GameActionException 
 	{
 		if ( MyConstants.DEBUG_MODE ) System.out.println("Wandering");
+		
 		if ( rc.isActive() ) 
 		{
 			Direction d = Utils.randomMovementDirection(rc);

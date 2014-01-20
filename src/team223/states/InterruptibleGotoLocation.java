@@ -4,7 +4,6 @@ import java.util.List;
 
 import team223.AStar;
 import team223.AStar.PathFindingResultCallback;
-import team223.AStar.Result;
 import team223.MyConstants;
 import team223.State;
 import battlecode.common.GameActionException;
@@ -73,54 +72,15 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 	}	
 
 	@Override
-	public Result checkInterrupt() 
-	{
-		State newState = null;
-		if ( currentHealth == UNKNOWN_HEALTH ) 
-		{
-			currentHealth = rc.getHealth();
-			if ( currentHealth < MyConstants.FLEE_HEALTH ) { 
-				newState = onLowRobotHealth( currentHealth );
-				if ( INTR_GOTO_LOCATION_VERBOSE ) System.out.println("Robot is low on health ("+currentHealth+") , switched to state: "+newState);				
-			}
-		} 
-		else 
-		{
-			double newHealth = rc.getHealth();
-			if ( newHealth < currentHealth ) 
-			{
-				// we're under attack 
-				currentHealth = UNKNOWN_HEALTH; // invalidate health, we don't know when we'll be called again (if ever)						
-				newState = onAttack( newHealth );
-				if ( INTR_GOTO_LOCATION_VERBOSE ) System.out.println("Robot health diminished ("+currentHealth+") , switched to state "+newState);				
-			} else {
-				currentHealth = newHealth;
-				return Result.CONTINUE;
-			}
-		}
-		
-		if ( newState != null ) {
-			activeState = newState;
-			return Result.INTERRUPT;
-		} 
-		return Result.CONTINUE;
-	}
-
-	@Override
 	public final void foundPath(List<MapLocation> path) 
 	{
 		if ( INTR_GOTO_LOCATION_VERBOSE ) System.out.println("Found path , switching to GotoLocation");
 		
-		activeState = new GotoLocation( rc , path , movementType , isInvokeBeforeMove() ) {
+		activeState = new GotoLocation( rc , path , movementType ) {
 
 			@Override
 			protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
 				return InterruptibleGotoLocation.this.hasArrivedAtDestination(current, dstLoc);
-			}
-			
-			@Override
-			protected State beforeMove() {
-				return InterruptibleGotoLocation.this.beforeEachMove();
 			}
 			
 			@Override
@@ -151,14 +111,6 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 		}
 	}
 	
-	protected State beforeEachMove() {
-		return null;
-	}
-	
-	public boolean isInvokeBeforeMove() {
-		return false;
-	}
-
 	@Override
 	public final void foundNoPath() {
 		activeState = null;
@@ -182,7 +134,6 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 		if ( activeState != null ) 
 		{
 			activeState  = activeState.perform();
-			
 			if ( activeState != null ) {
 				return this;
 			}
@@ -227,14 +178,11 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 	
 	public State onLowRobotHealth(double currentRobotHealth) 
 	{
-		return new Fleeing(rc);
+		return null;
 	}
 
 	public State onAttack(double currentRobotHealth) 
 	{
-		if ( currentRobotHealth < MyConstants.FLEE_HEALTH ) {
-			return new Fleeing(rc);
-		}
 		return new AttackEnemiesInSight(rc);				
 	}		
 

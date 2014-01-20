@@ -35,12 +35,12 @@ public final class AttackEnemiesInSight extends State {
 			RobotAndInfo currentEnemy = Utils.pickEnemyToAttack( rc , enemies , null );		
 			if ( currentEnemy != null ) 
 			{
+				if ( MyConstants.DEBUG_MODE) System.out.println("Attacking "+currentEnemy);
+				activeState = new Attacking( rc , currentEnemy.robot , false );				
 				if ( rc.isActive() ) {
 					rc.attackSquare( currentEnemy.info.location );
 					rc.yield();
 				}
-				if ( MyConstants.DEBUG_MODE) System.out.println("Attacking "+currentEnemy);
-				activeState = new Attacking( rc , currentEnemy.robot , false ).perform();
 				return this;
 			}
 		}

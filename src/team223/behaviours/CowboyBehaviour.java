@@ -14,7 +14,6 @@ import team223.Utils;
 import team223.Utils.RobotAndInfo;
 import team223.states.AttackEnemiesInSight;
 import team223.states.Attacking;
-import team223.states.Fleeing;
 import team223.states.InterruptibleGotoLocation;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -130,17 +129,6 @@ public final class CowboyBehaviour extends RobotBehaviour {
 			Utils.shuffle( this.locations );				
 		}
 
-		if ( state instanceof Fleeing ) {
-			state = state.perform();
-			return;
-		}
-
-		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) {
-			state = new Fleeing(rc).perform();
-			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
-			return;
-		}
-
 		if ( state instanceof AttackEnemiesInSight ) 
 		{
 			state = state.perform();
@@ -153,11 +141,11 @@ public final class CowboyBehaviour extends RobotBehaviour {
 			RobotAndInfo enemyToAttack = Utils.pickEnemyToAttack( rc , enemies , null );
 			if ( enemyToAttack != null ) 
 			{
+				state = new Attacking(rc , enemyToAttack.robot , true );				
 				if ( rc.isActive() ) {
 					rc.attackSquare( enemyToAttack.info.location );
 					rc.yield();
 				}
-				state = new Attacking(rc , enemyToAttack.robot , true ).perform();
 				return;
 			}
 		}
@@ -322,7 +310,8 @@ public final class CowboyBehaviour extends RobotBehaviour {
 
 			if ( construct ) {
 				if ( MyConstants.COWBOY_VERBOSE ) System.out.println("Starting PASTR construction");
-				while ( ! rc.isActive() ) {
+				while ( ! rc.isActive() ) 
+				{
 					rc.yield();
 				}				
 				rc.construct( RobotType.PASTR );

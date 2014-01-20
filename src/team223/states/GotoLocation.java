@@ -24,11 +24,9 @@ public abstract class GotoLocation extends State {
 	private int currentPathSize=0;
 	private MapLocation destination;
 	
-	private final boolean invokeBeforeMove;
-	
 	private int previousStep = Integer.MAX_VALUE;
 	
-	private State tempState;
+	// private State tempState;
 
 	private final PathFindingResultCallback recalculatePathCallback = new PathFindingResultCallback() {
 
@@ -49,16 +47,11 @@ public abstract class GotoLocation extends State {
 		}
 	};
 
-	public GotoLocation(RobotController rc,List<MapLocation> path,MovementType movementType,boolean invokeBeforeMove) 
+	public GotoLocation(RobotController rc,List<MapLocation> path,MovementType movementType) 
 	{
 		super(rc);
-		this.invokeBeforeMove = invokeBeforeMove;
 		this.movementType = movementType;
 		setNewPath( path );
-	}
-
-	public final MapLocation getDestination() {
-		return destination;
 	}
 
 	private void setNewPath(List<MapLocation> path) {
@@ -83,28 +76,16 @@ public abstract class GotoLocation extends State {
 		return null;
 	}	
 	
-	protected State beforeMove() {
-		return null;
-	}
-
 	@Override
 	public final State perform() throws GameActionException 
 	{
-		if ( tempState != null ) {
-			tempState = tempState.perform();
-			return this;
-		}
-		
-		final MapLocation myLocation = rc.getLocation();
-		if ( hasArrivedAtDestination( myLocation , destination ) ) {
+		if ( hasArrivedAtDestination( rc.getLocation() , destination ) ) 
+		{
 			if ( MyConstants.GOTO_LOCATION_VERBOSE) System.out.println("Arrived at destination "+destination);
 			return null;
 		} 
 
-		if ( ! rc.isActive() ) {
-			rc.yield();
-		}
-		
+		MapLocation myLocation = rc.getLocation();
 		MapLocation next = nextStep( myLocation );
 		if ( next != null ) 
 		{
@@ -113,23 +94,11 @@ public abstract class GotoLocation extends State {
 				return null;
 			}
 			
-			if ( invokeBeforeMove ) 
-			{
-				tempState = beforeMove();
-				if ( tempState != null ) {
-					if ( MyConstants.GOTO_LOCATION_VERBOSE) System.out.println("beforeMove() returned "+tempState);
-					tempState = tempState.perform();
-					return this;
-				}
-				if ( ! rc.isActive() ) {
-					return this;
-				}
-			}
-			
 			if ( rc.canMove( direction ) )
 			{
-				movementFailureCount=0;		
-				if ( rc.isActive() ) {
+				if ( rc.isActive() ) 
+				{
+					movementFailureCount=0;					
 					if ( movementType == MovementType.RUN ) {
 						rc.move( direction );
 					} else {
@@ -143,26 +112,6 @@ public abstract class GotoLocation extends State {
 
 				if ( MyConstants.GOTO_LOCATION_VERBOSE) System.out.println("Failed to move "+rc.getLocation()+" -> "+next+" (count: "+movementFailureCount+")");
 				
-				// check what's blocking our way
-				Robot object = (Robot) rc.senseObjectAtLocation( myLocation.add( direction ) );
-				if ( object != null ) 
-				{
-					RobotInfo ri = rc.senseRobotInfo( object);
-					if ( MyConstants.GOTO_LOCATION_VERBOSE) System.out.println("Something is in the way: "+ri.type+" , Team "+ri.team);
-					
-					if ( ri.team != rc.getTeam() ) 
-					{
-						switch( ri.type ) {
-							case SOLDIER:
-							case PASTR:
-							case NOISETOWER:
-								if ( MyConstants.GOTO_LOCATION_VERBOSE) System.out.println("Attacking enemy robot "+ri);
-								tempState = new Attacking( rc , (Robot) object );
-								break;
-						}
-					}
-				}
-
 				if ( movementFailureCount > MyConstants.MAX_PATH_MOVEMENT_FAILURES ) 
 				{
 					// 	movement failed too many times, some new obstacle is blocking us...recalculate path					

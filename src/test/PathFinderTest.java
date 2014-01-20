@@ -63,11 +63,6 @@ public class PathFinderTest {
 			}
 			
 			@Override
-			public Result checkInterrupt() {
-				return Result.INTERRUPT;
-			}
-
-			@Override
 			public TimeoutResult onTimeout() {
 				System.out.println("Timeout");
 				return TimeoutResult.CONTINUE;

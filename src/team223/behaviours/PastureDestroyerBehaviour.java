@@ -6,7 +6,6 @@ import team223.MyConstants;
 import team223.RobotBehaviour;
 import team223.Utils;
 import team223.states.AttackEnemiesInSight;
-import team223.states.Fleeing;
 import team223.states.InterruptibleGotoLocation;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -25,18 +24,6 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 	@Override
 	public void perform() throws GameActionException 
 	{
-		if ( state instanceof Fleeing ) 
-		{
-			state = state.perform();
-			return;
-		} 
-
-		if ( rc.getHealth() < MyConstants.FLEE_HEALTH ) {
-			state = new Fleeing( rc ).perform();
-			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }			
-			return;
-		}
-		
 		if ( state instanceof InterruptibleGotoLocation ) 
 		{
 			state = state.perform();

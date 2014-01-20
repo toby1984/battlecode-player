@@ -1,5 +1,6 @@
 package team223;
 
+import team223.Utils.RobotAndInfo;
 import team223.behaviours.CowboyBehaviour;
 import team223.behaviours.DestroyerBehaviour;
 import team223.behaviours.HQBehaviour;
@@ -9,6 +10,7 @@ import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.GameConstants;
 import battlecode.common.MapLocation;
+import battlecode.common.Robot;
 import battlecode.common.RobotController;
 import battlecode.common.RobotType;
 import battlecode.common.Team;
@@ -102,6 +104,18 @@ public class RobotPlayer
 							default:
 								throw new RuntimeException("Failed to read broadcast from HQ ?");
 						}
+					}
+				}
+				
+				final Robot[] enemies = rc.senseNearbyGameObjects( Robot.class , myType.attackRadiusMaxSquared , enemyTeam );
+				if ( enemies.length > 0 ) 
+				{
+					RobotAndInfo target = Utils.pickEnemyToAttack( rc , enemies , null );
+					if ( target != null && rc.isActive() ) 
+					{
+						rc.attackSquare( target.info.location );
+						rc.yield();
+						continue;
 					}
 				}
 				
