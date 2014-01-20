@@ -8,7 +8,6 @@ import team223.AStar.Result;
 import team223.MyConstants;
 import team223.State;
 import battlecode.common.GameActionException;
-import battlecode.common.GameObject;
 import battlecode.common.MapLocation;
 import battlecode.common.MovementType;
 import battlecode.common.Robot;
@@ -19,7 +18,7 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 
 	protected static final int UNKNOWN_HEALTH= -99999;
 	
-	private static boolean VERBOSE = false;
+	public static boolean INTR_GOTO_LOCATION_VERBOSE = false;
 
 	private final AStar finder;
 	private final MovementType movementType;
@@ -31,14 +30,14 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 	
 	private PathFindingResultCallback callback;
 	
-	public InterruptibleGotoLocation(final RobotController rc,MovementType movementType,int pathFindingTimeout)
+	public InterruptibleGotoLocation(final RobotController rc,MovementType movementType)
 	{
 		super(rc);
 		
 		this.rc = rc;
 		this.movementType = movementType;
 
-		finder = new AStar(rc,pathFindingTimeout) {
+		finder = new AStar(rc) {
 
 			@Override
 			public boolean isWalkable(MapLocation loc) throws GameActionException 
@@ -82,7 +81,7 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 			currentHealth = rc.getHealth();
 			if ( currentHealth < MyConstants.FLEE_HEALTH ) { 
 				newState = onLowRobotHealth( currentHealth );
-				if ( VERBOSE ) System.out.println("Robot is low on health ("+currentHealth+") , switched to state: "+newState);				
+				if ( INTR_GOTO_LOCATION_VERBOSE ) System.out.println("Robot is low on health ("+currentHealth+") , switched to state: "+newState);				
 			}
 		} 
 		else 
@@ -93,7 +92,7 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 				// we're under attack 
 				currentHealth = UNKNOWN_HEALTH; // invalidate health, we don't know when we'll be called again (if ever)						
 				newState = onAttack( newHealth );
-				if ( VERBOSE ) System.out.println("Robot health diminished ("+currentHealth+") , switched to state "+newState);				
+				if ( INTR_GOTO_LOCATION_VERBOSE ) System.out.println("Robot health diminished ("+currentHealth+") , switched to state "+newState);				
 			} else {
 				currentHealth = newHealth;
 				return Result.CONTINUE;
@@ -110,7 +109,7 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 	@Override
 	public final void foundPath(List<MapLocation> path) 
 	{
-		if ( VERBOSE ) System.out.println("Found path , switching to GotoLocation");
+		if ( INTR_GOTO_LOCATION_VERBOSE ) System.out.println("Found path , switching to GotoLocation");
 		
 		activeState = new GotoLocation( rc , path , movementType , isInvokeBeforeMove() ) {
 
@@ -192,19 +191,19 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 		if ( finder.isStarted() ) 
 		{
 			if ( finder.isFinished() ) {
-				if ( VERBOSE ) System.out.println("perform() returns, search finished.");
+				if ( INTR_GOTO_LOCATION_VERBOSE ) System.out.println("perform() returns, search finished.");
 				return null;
 			}
 			if ( finder.isAborted() ) 
 			{
-				if ( VERBOSE ) System.out.println("Path finding aborted.");
+				if ( INTR_GOTO_LOCATION_VERBOSE ) System.out.println("Path finding aborted.");
 				return null; // 
 			}
 			finder.continueFindPath();
 			return this;
 		}
 		
-		if ( VERBOSE ) System.out.println("perform() starts path finding");			
+		if ( INTR_GOTO_LOCATION_VERBOSE ) System.out.println("perform() starts path finding");			
 		
 		finder.reset();
 		

@@ -1,7 +1,17 @@
 package team223;
 
-import team223.behaviours.*;
-import battlecode.common.*;
+import team223.behaviours.CowboyBehaviour;
+import team223.behaviours.DestroyerBehaviour;
+import team223.behaviours.HQBehaviour;
+import team223.behaviours.PastrBehaviour;
+import team223.behaviours.PastureDestroyerBehaviour;
+import battlecode.common.Clock;
+import battlecode.common.Direction;
+import battlecode.common.GameConstants;
+import battlecode.common.MapLocation;
+import battlecode.common.RobotController;
+import battlecode.common.RobotType;
+import battlecode.common.Team;
 
 public class RobotPlayer 
 {
@@ -15,9 +25,7 @@ public class RobotPlayer
 	public static Team myTeam;
 	public static Team enemyTeam;
 	
-	public static boolean spawnAreaCleared;
-	
-	public static int pathFindingMaxTimeout;
+	public static boolean leftSpawnArea;
 	
 	public static int id;
 	
@@ -33,17 +41,7 @@ public class RobotPlayer
 			{
 				if ( rnd == null ) 
 				{
-					
-					final int mapArea = rc.getMapWidth()*rc.getMapHeight();
-					
-					if ( mapArea >= (40*40 ) ) {
-						pathFindingMaxTimeout = 200;
-					} else {
-						pathFindingMaxTimeout = 30;
-					}
-					System.out.println("Map size: "+rc.getMapWidth()+" x "+rc.getMapHeight());
-					
-					final Integer id = rc.getRobot().getID(); 
+					final int id = rc.getRobot().getID(); 
 					
 					myTeam = rc.getTeam();
 					enemyTeam = myTeam.opponent();
@@ -55,7 +53,7 @@ public class RobotPlayer
 					
 					myType = rc.getType();
 					
-					rnd = new FastRandom( (long) (31+31*id.intValue()) );
+					rnd = new FastRandom( 31+31*id );
 					
 					stepsToBackOff = 2 + rnd.nextInt( 2 );
 					
@@ -65,20 +63,21 @@ public class RobotPlayer
 						if ( MyConstants.DEBUG_MODE ) {
 							System.out.println("Robot is a HQ");
 						}
-						rc.setIndicatorString( 0 , "HQ");			
-						spawnAreaCleared = true;
+						rc.setIndicatorString( 0 , "HQ");								
+						leftSpawnArea = true;
 					} 
 					else if ( rc.getType() == RobotType.PASTR ) 
 					{
 						behaviour = new PastrBehaviour(rc);
-						spawnAreaCleared = true;
+						leftSpawnArea = true;
 						rc.yield();
 						continue;
 					} 
 					else 
 					{
 						int data = rc.readBroadcast( HQBehaviour.HQ_BROADCAST_CHANNEL );
-						switch( data ) {
+						switch( data ) 
+						{
 							case HQBehaviour.SPAWN_DESTROYER:
 								behaviour = new DestroyerBehaviour( rc );		
 								if ( MyConstants.DEBUG_MODE ) {
@@ -106,18 +105,19 @@ public class RobotPlayer
 					}
 				}
 				
-				if ( spawnAreaCleared ) 
+				if ( leftSpawnArea ) 
 				{
 					behaviour.perform();
 				} 
 				else 
 				{
 					// clear spawn area
-					spawnAreaCleared = invocationCount++ > stepsToBackOff;
+					leftSpawnArea = invocationCount++ > stepsToBackOff;
 					
 					while ( ! rc.isActive() ) {
 						rc.yield();
 					}
+					
 					Direction opposite = rc.getLocation().directionTo( myHQ ).opposite();
 					if ( rc.canMove( opposite ) ) 
 					{
@@ -135,6 +135,12 @@ public class RobotPlayer
 			} 
 			catch (Exception e) {
 				e.printStackTrace();
+			}
+			
+			if ( MyConstants.DEBUG_BYTECODE_LIMIT ) {
+				if ( Clock.getBytecodeNum() > GameConstants.FREE_BYTECODES ) {
+					System.out.println("bytecode limit exceeded: "+Clock.getBytecodeNum());
+				}
 			}
 			rc.yield();
 		} 

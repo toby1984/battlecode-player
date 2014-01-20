@@ -1,7 +1,10 @@
 package team223.behaviours;
 
-import team223.*;
+import team223.AStar;
 import team223.AStar.TimeoutResult;
+import team223.MyConstants;
+import team223.RobotBehaviour;
+import team223.Utils;
 import team223.states.AttackEnemiesInSight;
 import team223.states.Fleeing;
 import team223.states.InterruptibleGotoLocation;
@@ -13,8 +16,6 @@ import battlecode.common.RobotController;
 import battlecode.common.RobotType;
 
 public final class PastureDestroyerBehaviour extends RobotBehaviour {
-
-	private static final boolean VERBOSE = false;
 
 	public PastureDestroyerBehaviour(final RobotController rc) 
 	{
@@ -42,7 +43,7 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 			if ( state == null ) 
 			{
 				// destination reached
-				if ( VERBOSE ) System.out.println("Pasture destroyer is at "+rc.getLocation() );
+				if ( MyConstants.PASTR_DESTROYER_VERBOSE ) System.out.println("Pasture destroyer is at "+rc.getLocation() );
 				state = new AttackEnemiesInSight(rc).perform();
 				if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
 			}
@@ -81,7 +82,7 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 		if ( rc.canMove( d ) ) {
 			int distanceSquared = myLocation.add( d ).distanceSquaredTo( target );
 			if ( distanceSquared <= RobotType.SOLDIER.attackRadiusMaxSquared ) {
-				if ( VERBOSE ) System.out.println("Sneaking to "+myLocation.add( d )+" of target "+target+" brings me to distance "+distanceSquared);
+				if ( MyConstants.PASTR_DESTROYER_VERBOSE ) System.out.println("Sneaking to "+myLocation.add( d )+" of target "+target+" brings me to distance "+distanceSquared);
 				while ( ! rc.isActive() ) {
 					rc.yield();
 				}
@@ -91,13 +92,13 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 				return;
 			}
 		}
-		if ( VERBOSE ) System.out.println("Cannot attack "+target+" from "+myLocation+" , distance: "+myLocation.distanceSquaredTo( target )+" (max: "+RobotType.SOLDIER.attackRadiusMaxSquared+")");
+		if ( MyConstants.PASTR_DESTROYER_VERBOSE ) System.out.println("Cannot attack "+target+" from "+myLocation+" , distance: "+myLocation.distanceSquaredTo( target )+" (max: "+RobotType.SOLDIER.attackRadiusMaxSquared+")");
 
 		if ( MyConstants.DEBUG_MODE) {
 			System.out.println("Calculating path to closest pasture "+target);
 		}
 
-		state = new InterruptibleGotoLocation( rc , MovementType.RUN , MyConstants.PASTURE_DESTROYER_PATH_FINDING_TIMEOUT_ROUNDS ) {
+		state = new InterruptibleGotoLocation( rc , MovementType.RUN ) {
 
 			@Override
 			protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
@@ -113,13 +114,13 @@ public final class PastureDestroyerBehaviour extends RobotBehaviour {
 					if ( pastrLocations.length != 0 ) {
 						MapLocation newTarget = pickClosestTarget(rc,myLocation,pastrLocations);
 						if ( newTarget != null ) {
-							finder.setRoute( rc.getLocation() , newTarget );
+							finder.setRoute( rc.getLocation() , newTarget , MyConstants.PASTURE_DESTROYER_PATH_FINDING_TIMEOUT_ROUNDS );
 							return true;
 						}
 					}
 					return false;
 				} else {
-					finder.setRoute( rc.getLocation() , target );
+					finder.setRoute( rc.getLocation() , target , MyConstants.PASTURE_DESTROYER_PATH_FINDING_TIMEOUT_ROUNDS );
 				} 
 				return true;
 			}

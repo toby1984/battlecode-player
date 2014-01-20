@@ -1,17 +1,23 @@
 package team223;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Stack;
 
-import battlecode.common.*;
+import battlecode.common.Clock;
+import battlecode.common.GameActionException;
+import battlecode.common.MapLocation;
+import battlecode.common.RobotController;
+import battlecode.common.TerrainTile;
 
 
 public abstract class AStar
 {
-	private static final boolean VERBOSE = false;
-	
-	private static final boolean DEBUG_RUNTIME = true;
-	
-    public static final int INTERRUPT_CHECK_INTERVAL = 3;
+	public static final int INTERRUPT_CHECK_INTERVAL = 3;
     
     // nodes to check
     private HashMap<PathNode,PathNode> openMap = new HashMap<PathNode, PathNode>(2000);
@@ -32,17 +38,13 @@ public abstract class AStar
     private boolean finished = false;
     private boolean aborted = false;
     
-    private final int pathFindingTimeout;
+    private int pathFindingTimeout;
 
     private int totalElapsedRounds;
     private int elapsedRounds;
     private int startedInRound;
     
     private Callback callback;
-    
-    // debugging
-    private int missedRounds = 0;
-    private long debugCounter = 0;    
     
     public static enum Result {
     	INTERRUPT,ABORT,CONTINUE;
@@ -93,13 +95,7 @@ public abstract class AStar
         @Override
         public int compareTo(PathNode o) 
         {
-        	if ( this.f < o.f ) {
-        		return -1;
-        	} 
-        	if ( this.f > o.f ) {
-        		return 1;
-        	}
-        	return 0;
+        	return (int) Math.signum( this.f - o.f );
         }
         
         @Override
@@ -108,14 +104,10 @@ public abstract class AStar
         	return hashcode;
 		}
 
-		@SuppressWarnings("unchecked")
 		@Override
 		public boolean equals(Object obj) 
 		{
-			if ( obj instanceof PathNode) {
-				return this.value.equals( ((PathNode) obj).value );
-			}
-			return false;
+			return this.value.equals( ((PathNode) obj).value );
 		}
 
 		public final void f(float value) { this.f = value; }
@@ -181,9 +173,8 @@ public abstract class AStar
         }
     }
     
-	public AStar(RobotController rc,int pathFindingTimeout) {
+	public AStar(RobotController rc) {
 		this.rc = rc;
-		this.pathFindingTimeout = pathFindingTimeout;
 	}
 	
 	public final boolean isInterrupted() {
@@ -217,7 +208,7 @@ public abstract class AStar
 		mainLoop(current);
 	}
 	
-	public final void setRoute(MapLocation from,MapLocation to) {
+	public final void setRoute(MapLocation from,MapLocation to,int pathFindingTimeout) {
 		if ( from == null || to == null ) {
 			throw new IllegalArgumentException("from/to must not be null (from: "+from+" / to: "+to+")");
 		}
@@ -232,6 +223,7 @@ public abstract class AStar
 				e.printStackTrace();
 			}
 		}
+		this.pathFindingTimeout = pathFindingTimeout;
 		this.start = from;
 		this.destination = to;
 	}
@@ -274,7 +266,7 @@ public abstract class AStar
         started = true;
         this.callback = callback;
         
-		if ( DEBUG_RUNTIME ) System.out.println("Looking for path from "+this.start+" to "+this.destination);
+		if ( MyConstants.ASTAR_DEBUG_RUNTIME ) System.out.println("Looking for path from "+this.start+" to "+this.destination);
 		
         if ( this.start.equals(  this.destination ) ) { // trivial case
         	List<MapLocation> result = new ArrayList<MapLocation>();
@@ -285,9 +277,16 @@ public abstract class AStar
             return;
         }
         
-        if ( ! isWalkable( this.destination ) ) {
-    		// if ( MyConstants.DEBUG_MODE) 
-        	System.out.println(">>>>>>> Destination "+this.destination+" is not walkable");
+        if ( ! isWalkable( this.destination ) || this.destination.distanceSquaredTo( RobotPlayer.enemyHQ ) < MyConstants.ENEMY_HQ_SAFE_DISTANCE_SRT ) 
+        {
+    		if ( MyConstants.DEBUG_MODE) 
+    		{
+    			if ( ! isWalkable( this.destination ) ) {
+    				System.out.println(">>>>>>> Destination "+this.destination+" is not walkable");
+    			} else {
+    				System.out.println(">>>>>>> Destination "+this.destination+" is in enemy HQ firing range");
+    			}
+    		}
         	searchFinished( null );
         	return;
         }
@@ -297,7 +296,7 @@ public abstract class AStar
         assignCost( start );
         closeList.add( start );
 
-		if ( VERBOSE ) System.out.println("Starting search "+this.start+" -> "+this.destination);
+		if ( MyConstants.ASTAR_VERBOSE ) System.out.println("Starting search "+this.start+" -> "+this.destination);
         mainLoop( start );
     }
     
@@ -306,15 +305,15 @@ public abstract class AStar
     	interruptedNode = null;
     	
     	if ( result != null ) {
-			if ( DEBUG_RUNTIME ) {
-				System.out.println("*** (elapsed rounds: "+totalElapsedRounds+") Path finding finished "+start+" -> "+destination+" , path length: "+result.size());
+			if ( MyConstants.ASTAR_DEBUG_RUNTIME ) {
+				System.out.println("*** (elapsed rounds: "+totalElapsedRounds+") Path finding "+start+" -> "+destination+" finished, path length: "+result.size());
 			}
     		callback.foundPath( result );
     	} 
     	else 
     	{
-			if ( DEBUG_RUNTIME ) {
-				System.out.println("*** (elapsed rounds: "+totalElapsedRounds+") Path finding failed (aborted: "+aborted+" , elapsed rounds: "+totalElapsedRounds+")");
+			if ( MyConstants.ASTAR_DEBUG_RUNTIME ) {
+				System.out.println("*** (elapsed rounds: "+totalElapsedRounds+") Path finding "+start+" -> "+destination+" FAILED (aborted: "+aborted+" , elapsed rounds: "+totalElapsedRounds+")");
 			}
     		callback.foundNoPath();
     	}
@@ -324,13 +323,6 @@ public abstract class AStar
     {
         while ( true ) 
         {
-        	if ( VERBOSE ) {
-        		debugCounter++;
-        		if ( (debugCounter%30) == 0 ) {
-        			System.out.println("Searching (nodes: "+debugCounter+" , "+start+" -> "+destination+")");
-        		}
-        	}
-        	
         	if ( aborted ) {
         		searchFinished(null);
         		return;
@@ -367,7 +359,7 @@ public abstract class AStar
         	{
         		iterationCount = INTERRUPT_CHECK_INTERVAL;
 
-        		if ( DEBUG_RUNTIME ) 
+        		if ( MyConstants.ASTAR_DEBUG_RUNTIME ) 
         		{
             		final int currentRound = Clock.getRoundNum();
             		int delta = ( currentRound - startedInRound);
@@ -383,11 +375,11 @@ public abstract class AStar
         		
         		if ( elapsedRounds >= pathFindingTimeout ) 
         		{
-        			if ( DEBUG_RUNTIME ) System.out.println("!!! (startedInRound: "+startedInRound+", elapsed: "+totalElapsedRounds+", timeout limit: "+pathFindingTimeout+") Path finding timeout *** ");
+        			if ( MyConstants.ASTAR_DEBUG_RUNTIME ) System.out.println("!!! (startedInRound: "+startedInRound+", elapsed: "+totalElapsedRounds+", timeout limit: "+pathFindingTimeout+") Path finding timeout *** ");
         			switch( callback.onTimeout() ) 
         			{
             			case ABORT:
-            				if ( DEBUG_RUNTIME ) {
+            				if ( MyConstants.ASTAR_DEBUG_RUNTIME ) {
             					System.out.println("!!! (Timeout,elapsed: "+totalElapsedRounds+") Aborted at node "+current.value);
             				}        				
             				finished = true;
@@ -396,14 +388,14 @@ public abstract class AStar
             				return;
             			default:
         			}
-        			if ( DEBUG_RUNTIME ) System.out.println("!!! (elapsed rounds: "+totalElapsedRounds+") Path finding continues after timeout ***");
+        			if ( MyConstants.ASTAR_DEBUG_RUNTIME ) System.out.println("!!! (elapsed rounds: "+totalElapsedRounds+") Path finding continues after timeout ***");
         			elapsedRounds = 0;        			
         		}
         		
         		switch( callback.checkInterrupt() ) 
         		{
         			case ABORT:
-        				if ( VERBOSE ) {
+        				if ( MyConstants.ASTAR_VERBOSE ) {
         					System.out.println("Aborted at node "+current);
         				}        				
         				finished = true;
@@ -411,7 +403,7 @@ public abstract class AStar
         				interruptedNode = null;
         				return;
         			case INTERRUPT:
-        				if ( VERBOSE ) {
+        				if ( MyConstants.ASTAR_VERBOSE ) {
         					System.out.println("Interruped at node "+current);
         				}
         				interruptedNode = current;
@@ -466,10 +458,13 @@ public abstract class AStar
 				if ( dx != 0 || dy != 0 ) 
 				{
 					final MapLocation newLocation = new MapLocation(x+dx,y+dy);
-					final TerrainTile tile = rc.senseTerrainTile( newLocation );	
-					if ( ( tile == TerrainTile.NORMAL || tile == TerrainTile.ROAD ) && isWalkable( newLocation ) ) //  && newLocation.distanceSquaredTo( RobotPlayer.enemyHQ) >= MyConstants.ENEMY_HQ_SAFE_DISTANCE_SRT 
+					if ( newLocation.distanceSquaredTo( RobotPlayer.enemyHQ) >= MyConstants.ENEMY_HQ_SAFE_DISTANCE_SRT ) 
 					{
-						maybeAddNeighbor( parent , newLocation );							
+						final TerrainTile tile = rc.senseTerrainTile( newLocation );	
+						if ( ( tile == TerrainTile.NORMAL || tile == TerrainTile.ROAD ) && isWalkable( newLocation ) ) 
+						{
+							maybeAddNeighbor( parent , newLocation );							
+						}
 					}
 				}
 			}

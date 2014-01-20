@@ -35,7 +35,7 @@ public class PathFinderTest {
 			}
 		};
 		
-		AStar finder = new AStar(rc,-1) {
+		AStar finder = new AStar(rc) {
 
 			@Override
 			protected boolean isCloseEnoughToTarget(PathNode  node) {
@@ -48,9 +48,7 @@ public class PathFinderTest {
 			}
 		};
 		
-		finder.setRoute( from , to );
-		
-		final Random rnd = new Random(0xdeadbeef);
+		finder.setRoute( from , to , -1 );
 		
 		final Callback callback = new Callback() {
 			

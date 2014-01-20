@@ -1,16 +1,33 @@
 package team223.behaviours;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
-import team223.*;
+import team223.AStar;
 import team223.AStar.TimeoutResult;
+import team223.MyConstants;
+import team223.RobotBehaviour;
+import team223.RobotPlayer;
+import team223.Utils;
 import team223.Utils.RobotAndInfo;
-import team223.states.*;
-import battlecode.common.*;
+import team223.states.AttackEnemiesInSight;
+import team223.states.Attacking;
+import team223.states.Fleeing;
+import team223.states.InterruptibleGotoLocation;
+import battlecode.common.Direction;
+import battlecode.common.GameActionException;
+import battlecode.common.GameConstants;
+import battlecode.common.GameObject;
+import battlecode.common.MapLocation;
+import battlecode.common.MovementType;
+import battlecode.common.Robot;
+import battlecode.common.RobotController;
+import battlecode.common.RobotInfo;
+import battlecode.common.RobotType;
 
 public final class CowboyBehaviour extends RobotBehaviour {
-
-	private static final boolean VERBOSE = false;
 
 	private int roundCount=0;
 
@@ -56,7 +73,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 			int xEnd = w - PASTR_RANGE_TWICE;
 			int yEnd = h - PASTR_RANGE_TWICE;
 
-			if ( VERBOSE ) System.out.println("PASTR_RANGE: "+PASTR_RANGE+" / minPop: "+MIN_POPULATED_TILES_IN_PASTR_RANGE);
+			if ( MyConstants.COWBOY_VERBOSE ) System.out.println("PASTR_RANGE: "+PASTR_RANGE+" / minPop: "+MIN_POPULATED_TILES_IN_PASTR_RANGE);
 
 			final List<MapLocation> candidates = new ArrayList<MapLocation>();
 			int minDistanceToHQ = (int) Math.ceil( Math.sqrt( RobotType.HQ.attackRadiusMaxSquared ) + PASTR_RANGE );
@@ -131,11 +148,18 @@ public final class CowboyBehaviour extends RobotBehaviour {
 		}
 
 		Robot[] enemies = rc.senseNearbyGameObjects( Robot.class , RobotType.SOLDIER.attackRadiusMaxSquared , RobotPlayer.enemyTeam );
-		RobotAndInfo enemyToAttack = Utils.pickEnemyToAttack( rc , enemies , null );
-		if ( enemyToAttack != null ) 
+		if ( enemies.length > 0 ) 
 		{
-			state = new Attacking(rc , enemyToAttack.robot , true ).perform();
-			return;
+			RobotAndInfo enemyToAttack = Utils.pickEnemyToAttack( rc , enemies , null );
+			if ( enemyToAttack != null ) 
+			{
+				if ( rc.isActive() ) {
+					rc.attackSquare( enemyToAttack.info.location );
+					rc.yield();
+				}
+				state = new Attacking(rc , enemyToAttack.robot , true ).perform();
+				return;
+			}
 		}
 
 		if ( ! pathFindingMode(rc ) ) {
@@ -154,7 +178,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 				if ( hasArrivedAtDestination( currentLoc , currentDestination ) ) 
 				{
 					// at destination, construct pastr
-					if ( VERBOSE ) {
+					if ( MyConstants.COWBOY_VERBOSE ) {
 						System.out.println("Reached destination "+oldState.getDestination()+" , building PASTR");	
 					}
 					while ( ! rc.isActive() ) {
@@ -163,7 +187,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 					rc.construct( RobotType.PASTR );
 					return true;
 				} 
-				if ( VERBOSE ) System.out.println("Failed to reach destination "+oldState.getDestination()+" , choosing new");
+				if ( MyConstants.COWBOY_VERBOSE ) System.out.println("Failed to reach destination "+oldState.getDestination()+" , choosing new");
 				discardLocation( currentDestination );
 			}
 			return true;
@@ -193,7 +217,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 				locations[i]=null; // discard occupied locations
 			}
 		}
-		if ( VERBOSE ) System.out.println("No (more) pasture candidates,giving up");
+		if ( MyConstants.COWBOY_VERBOSE ) System.out.println("No (more) pasture candidates,giving up");
 		return false;
 	}
 
@@ -204,11 +228,11 @@ public final class CowboyBehaviour extends RobotBehaviour {
 			throw new IllegalArgumentException("Location must not be null");
 		}
 		
-		if ( VERBOSE ) System.out.println("Moving to pasture location "+loc);
+		if ( MyConstants.COWBOY_VERBOSE ) System.out.println("Moving to pasture location "+loc);
 		
 		currentDestination = loc;
 		
-		state = new InterruptibleGotoLocation( rc , MovementType.SNEAK , 30) {
+		state = new InterruptibleGotoLocation( rc , MovementType.SNEAK) {
 
 			@Override
 			protected boolean hasArrivedAtDestination(MapLocation current,MapLocation dstLoc) {
@@ -217,7 +241,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 
 			@Override
 			public boolean setStartAndDestination(AStar finder,boolean retry) {
-				finder.setRoute( rc.getLocation() , loc );
+				finder.setRoute( rc.getLocation() , loc , MyConstants.COWBOY_PATH_FINDING_TIMEOUT_ROUNDS );
 				return true;
 			}
 
@@ -297,7 +321,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 			}
 
 			if ( construct ) {
-				if ( VERBOSE ) System.out.println("Starting PASTR construction");
+				if ( MyConstants.COWBOY_VERBOSE ) System.out.println("Starting PASTR construction");
 				while ( ! rc.isActive() ) {
 					rc.yield();
 				}				

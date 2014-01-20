@@ -11,8 +11,6 @@ import battlecode.common.RobotType;
 
 public final class AttackEnemiesInSight extends State {
 
-	private static final boolean VERBOSE = false;
-	
 	private State activeState;
 
 	public AttackEnemiesInSight(RobotController rc) {
@@ -29,19 +27,27 @@ public final class AttackEnemiesInSight extends State {
 		
 		Robot[] enemies = rc.senseNearbyGameObjects(Robot.class , rc.getLocation() , RobotType.SOLDIER.attackRadiusMaxSquared , rc.getTeam().opponent() );
 		
-		if ( VERBOSE ) System.out.println("Sensed "+enemies.length+" enemies in attack range");			
+		if ( MyConstants.ATTACK_IN_SIGHT_VERBOSE ) System.out.println("Sensed "+enemies.length+" enemies in attack range");			
 		if ( MyConstants.DEBUG_MODE) System.out.println("AttackEnemiesInSight - sensed "+enemies.length+" enemies around "+rc.getLocation());
 		
-		RobotAndInfo currentEnemy = Utils.pickEnemyToAttack( rc , enemies , null );		
-		if ( currentEnemy != null ) {
-			if ( MyConstants.DEBUG_MODE) System.out.println("Attacking "+currentEnemy);
-			activeState = new Attacking( rc , currentEnemy.robot , false ).perform();
-			return this;
-		} 
+		if ( enemies.length > 0 ) 
+		{
+			RobotAndInfo currentEnemy = Utils.pickEnemyToAttack( rc , enemies , null );		
+			if ( currentEnemy != null ) 
+			{
+				if ( rc.isActive() ) {
+					rc.attackSquare( currentEnemy.info.location );
+					rc.yield();
+				}
+				if ( MyConstants.DEBUG_MODE) System.out.println("Attacking "+currentEnemy);
+				activeState = new Attacking( rc , currentEnemy.robot , false ).perform();
+				return this;
+			}
+		}
 		if ( MyConstants.DEBUG_MODE) System.out.println("AttackEnemiesInSight - no more enemies to attack, returning");
 		return null;
 	}
-
+	
     @Override
     public String toString() {
     	return getClass().getSimpleName();

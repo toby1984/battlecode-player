@@ -4,7 +4,25 @@ import battlecode.common.RobotType;
 
 public interface MyConstants 
 {
-	public static final boolean DEBUG_MODE = true;
+	public static final boolean DEBUG_MODE = false;
+	
+	public static final boolean DEBUG_BYTECODE_LIMIT = true;
+	
+	public static final boolean COWBOY_VERBOSE = false;
+
+	public static final boolean HQ_VERBOSE = true; 
+
+	public static final boolean PASTR_DESTROYER_VERBOSE = false;
+
+	public static final boolean ASTAR_VERBOSE = false;
+
+	public static final boolean ASTAR_DEBUG_RUNTIME = false;
+
+	public static final boolean ATTACK_IN_SIGHT_VERBOSE = false;
+
+	public static final boolean GOTO_LOCATION_VERBOSE = false;	
+	
+	// Ranges
 	
 	public static final int SOLDIER_ATTACK_RANGE = (int) Math.ceil( Math.sqrt( RobotType.SOLDIER.attackRadiusMaxSquared ) );
 	
@@ -27,11 +45,11 @@ public interface MyConstants
 	 * Closest distance to attack range of enemy HQ , used to avoid coming under direct fire from enemy HQ (note that HQs deal splash damage though, we're
 	 * not going to completely avoid this area though).
 	 */
-	public static final int ENEMY_HQ_SAFE_DISTANCE = 1 + (int) Math.sqrt( RobotType.HQ.attackRadiusMaxSquared );
+	public static final int ENEMY_HQ_SAFE_DISTANCE = (int) Math.ceil( Math.sqrt( RobotType.HQ.attackRadiusMaxSquared ) );
 	
 	public static final int ENEMY_HQ_SAFE_DISTANCE_MIN = ENEMY_HQ_SAFE_DISTANCE;
 	
-	public static final int ENEMY_HQ_SAFE_DISTANCE_MAX = 7 + (int) Math.sqrt( RobotType.HQ.attackRadiusMaxSquared );	
+	public static final int ENEMY_HQ_SAFE_DISTANCE_MAX = 7 + ENEMY_HQ_SAFE_DISTANCE;	
 	
 	public static final int ENEMY_HQ_SAFE_DISTANCE_SRT = ENEMY_HQ_SAFE_DISTANCE_MIN*ENEMY_HQ_SAFE_DISTANCE_MIN;
 	

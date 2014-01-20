@@ -1,8 +1,8 @@
 package team223.behaviours;
 
+import team223.RobotBehaviour;
 import battlecode.common.GameActionException;
 import battlecode.common.RobotController;
-import team223.RobotBehaviour;
 
 public class PastrBehaviour extends RobotBehaviour {
 

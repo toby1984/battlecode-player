@@ -2,7 +2,12 @@ package team223.states;
 
 import team223.RobotPlayer;
 import team223.State;
-import battlecode.common.*;
+import battlecode.common.Direction;
+import battlecode.common.GameActionException;
+import battlecode.common.MapLocation;
+import battlecode.common.Robot;
+import battlecode.common.RobotController;
+import battlecode.common.RobotType;
 
 public final class Attacking extends State {
 

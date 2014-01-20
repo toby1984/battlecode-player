@@ -8,7 +8,6 @@ import team223.MyConstants;
 import team223.State;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
-import battlecode.common.GameObject;
 import battlecode.common.MapLocation;
 import battlecode.common.MovementType;
 import battlecode.common.Robot;
@@ -17,8 +16,6 @@ import battlecode.common.RobotInfo;
 
 public abstract class GotoLocation extends State {
 
-	private static final boolean VERBOSE = false;
-	
 	private final MovementType movementType;
 
 	private int movementFailureCount = 0;
@@ -37,13 +34,13 @@ public abstract class GotoLocation extends State {
 
 		@Override
 		public void foundPath(List<MapLocation> path) {
-			if ( VERBOSE ) System.out.println("Recalculating path succeeded.");				
+			if ( MyConstants.GOTO_LOCATION_VERBOSE ) System.out.println("Recalculating path succeeded.");				
 			setNewPath( path );							
 		}
 
 		@Override
 		public void foundNoPath() {
-			if ( VERBOSE) System.out.println("ERROR: Failed to recalculate path" );									
+			if ( MyConstants.GOTO_LOCATION_VERBOSE) System.out.println("ERROR: Failed to recalculate path" );									
 		}
 
 		@Override
@@ -68,7 +65,7 @@ public abstract class GotoLocation extends State {
 		currentPath = path;
 		currentPathSize = path.size();
 		destination = path.get( currentPathSize-1 );
-		if ( VERBOSE ) System.out.println("setNewPath(): "+path);
+		if ( MyConstants.GOTO_LOCATION_VERBOSE ) System.out.println("setNewPath(): "+path);
 	}
 
 	private MapLocation nextStep(MapLocation current) 
@@ -100,7 +97,7 @@ public abstract class GotoLocation extends State {
 		
 		final MapLocation myLocation = rc.getLocation();
 		if ( hasArrivedAtDestination( myLocation , destination ) ) {
-			if ( VERBOSE) System.out.println("Arrived at destination "+destination);
+			if ( MyConstants.GOTO_LOCATION_VERBOSE) System.out.println("Arrived at destination "+destination);
 			return null;
 		} 
 
@@ -120,7 +117,7 @@ public abstract class GotoLocation extends State {
 			{
 				tempState = beforeMove();
 				if ( tempState != null ) {
-					if ( VERBOSE) System.out.println("beforeMove() returned "+tempState);
+					if ( MyConstants.GOTO_LOCATION_VERBOSE) System.out.println("beforeMove() returned "+tempState);
 					tempState = tempState.perform();
 					return this;
 				}
@@ -144,14 +141,14 @@ public abstract class GotoLocation extends State {
 			{
 				movementFailureCount++;
 
-				if ( VERBOSE) System.out.println("Failed to move "+rc.getLocation()+" -> "+next+" (count: "+movementFailureCount+")");
+				if ( MyConstants.GOTO_LOCATION_VERBOSE) System.out.println("Failed to move "+rc.getLocation()+" -> "+next+" (count: "+movementFailureCount+")");
 				
 				// check what's blocking our way
 				Robot object = (Robot) rc.senseObjectAtLocation( myLocation.add( direction ) );
 				if ( object != null ) 
 				{
 					RobotInfo ri = rc.senseRobotInfo( object);
-					if ( VERBOSE) System.out.println("Something is in the way: "+ri.type+" , Team "+ri.team);
+					if ( MyConstants.GOTO_LOCATION_VERBOSE) System.out.println("Something is in the way: "+ri.type+" , Team "+ri.team);
 					
 					if ( ri.team != rc.getTeam() ) 
 					{
@@ -159,7 +156,7 @@ public abstract class GotoLocation extends State {
 							case SOLDIER:
 							case PASTR:
 							case NOISETOWER:
-								if ( VERBOSE) System.out.println("Attacking enemy robot "+ri);
+								if ( MyConstants.GOTO_LOCATION_VERBOSE) System.out.println("Attacking enemy robot "+ri);
 								tempState = new Attacking( rc , (Robot) object );
 								break;
 						}
@@ -169,7 +166,7 @@ public abstract class GotoLocation extends State {
 				if ( movementFailureCount > MyConstants.MAX_PATH_MOVEMENT_FAILURES ) 
 				{
 					// 	movement failed too many times, some new obstacle is blocking us...recalculate path					
-					if ( VERBOSE ) System.out.println("Re-calculating path "+rc.getLocation()+" -> "+next);						
+					if ( MyConstants.GOTO_LOCATION_VERBOSE ) System.out.println("Re-calculating path "+rc.getLocation()+" -> "+next);						
 					movementFailureCount = 0;
 					return recalculatePath( recalculatePathCallback );
 				}
@@ -177,7 +174,7 @@ public abstract class GotoLocation extends State {
 			return this;
 		} 
 
-		if ( VERBOSE) System.out.println("ERROR: At "+myLocation+" , no next step on path "+currentPath+" , recalculating path" );
+		if ( MyConstants.GOTO_LOCATION_VERBOSE) System.out.println("ERROR: At "+myLocation+" , no next step on path "+currentPath+" , recalculating path" );
 		movementFailureCount = 0;
 		return recalculatePath( recalculatePathCallback );
 	}

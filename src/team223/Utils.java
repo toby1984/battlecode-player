@@ -1,8 +1,12 @@
 package team223;
 
-import java.util.*;
-
-import battlecode.common.*;
+import battlecode.common.Direction;
+import battlecode.common.GameActionException;
+import battlecode.common.MapLocation;
+import battlecode.common.Robot;
+import battlecode.common.RobotController;
+import battlecode.common.RobotInfo;
+import battlecode.common.RobotType;
 
 public class Utils {
 
@@ -63,26 +67,16 @@ public class Utils {
 		return null;
 	}
 
-	public static Direction getDirection(int dx,int dy) 
-	{
-		for ( Direction d : Direction.values() ) 
-		{
-			if ( d.dx == dx && d.dy == dy ) {
-				return d;
-			}
-		}		
-		return Direction.NONE;
-	}
-
 	public static Direction randomDirection() {
 		return DIRECTIONS[ RobotPlayer.rnd.nextInt( DIRECTIONS.length ) ];
 	}
 
 	public static Direction randomMovementDirection(RobotController rc) 
 	{
-		Direction d = DIRECTIONS[ RobotPlayer.rnd.nextInt( DIRECTIONS.length ) ];		
+		Direction d = DIRECTIONS[ RobotPlayer.rnd.nextInt( DIRECTIONS.length ) ];
+		MapLocation myLocation = rc.getLocation();
 		for ( int retries = 7 ; retries > 0 ; retries-- ) {
-			if ( rc.canMove( d ) && rc.getLocation().add( d ).distanceSquaredTo( RobotPlayer.enemyHQ ) > RobotType.HQ.attackRadiusMaxSquared  ) {
+			if ( rc.canMove( d ) && myLocation.add( d ).distanceSquaredTo( RobotPlayer.enemyHQ ) > RobotType.HQ.attackRadiusMaxSquared  ) {
 				return d;
 			}
 			d = d.rotateLeft();
@@ -99,10 +93,6 @@ public class Utils {
 			arr[i1] = arr[j];
 			arr[j] = tmp;
 		}
-	}
-	
-	public static void main(String[] args) {
-		
 	}
 	
 	public static Direction[] getMovementCandidateDirections(RobotController rc) 
@@ -160,36 +150,6 @@ public class Utils {
 		throw new RuntimeException("Unreachable code reached, map size: "+rc.getMapWidth()+"x"+rc.getMapHeight()+" , location: "+location+" , x: "+locX+" , y: "+locY);
 	}
 
-	public static List<RobotInfo> sortAttackTargetsByDistance(RobotController rc,final MapLocation myLocation , Robot[] nearbyEnemies) throws GameActionException 
-	{
-		List<RobotInfo> list = new ArrayList<RobotInfo>();
-		for ( Robot r : nearbyEnemies ) {
-			RobotInfo info = rc.senseRobotInfo( r );
-			if ( info.type == RobotType.SOLDIER || info.type == RobotType.PASTR ) {
-				list.add( info );
-			}
-		}
-
-		Collections.sort( list , new Comparator<RobotInfo>() {
-
-			@Override
-			public int compare(RobotInfo o1, RobotInfo o2) 
-			{
-				int dist1 = myLocation.distanceSquaredTo( o1.location );
-				int dist2 = myLocation.distanceSquaredTo( o2.location );
-				if ( dist1 < dist2 ) {
-					return -1; 
-				} 
-				if ( dist1 > dist2 ) {
-					return 1;
-				}
-				return 0;
-			}
-
-		} );
-		return list;
-	}
-
 	public static final class RobotAndInfo 
 	{
 		public final Robot robot;
@@ -230,10 +190,6 @@ public class Utils {
 	
 	public static final RobotAndInfo pickEnemyToAttack(RobotController rc,Robot[] nearbyEnemies,EnemyBlacklist enemyBlacklist) throws GameActionException 
 	{
-		if ( nearbyEnemies.length == 0 ) {
-			return null;
-		}
-
 		RobotAndInfo primaryRobot=null;
 		int primaryDistanceSquared=0;
 		
@@ -360,7 +316,7 @@ public class Utils {
 		return new MapLocation( (int) Math.round( mx/count) , (int) Math.round( my / count) );		
 	}
 
-	public static int getEstimatedHealOfThreats(RobotController rc,Robot[] enemies) throws GameActionException 
+	public static int getEstimatedHealthOfThreats(RobotController rc,Robot[] enemies) throws GameActionException 
 	{
 		int result =0;
 		int opponentCount=0;
@@ -373,36 +329,5 @@ public class Utils {
 			}
 		}
 		return result*opponentCount;
-	}	
-
-	public static boolean isThreat(RobotInfo info) throws GameActionException 
-	{
-		return info.type == RobotType.SOLDIER || info.type == RobotType.HQ;
-	}
-
-	public static List<Robot> getThreats(RobotController rc,Robot[] enemies) throws GameActionException {
-
-		List<Robot> result = new ArrayList<Robot>();
-		for ( int i = 0 ; i < enemies.length ; i++ ) 
-		{
-			Robot r = enemies[i];
-			RobotInfo info = rc.senseRobotInfo( r );
-			if ( info.type == RobotType.SOLDIER ) {
-				result.add( r );
-			}
-		}
-		return result;
-	}
-
-	public static boolean isAttackTarget(RobotInfo ri) 
-	{
-		switch(ri.type) 
-		{
-			case PASTR:
-			case SOLDIER:
-				return true;
-			default:
-				return false;
-		}
 	}	
 }

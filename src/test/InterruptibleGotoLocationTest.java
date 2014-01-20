@@ -81,7 +81,7 @@ public class InterruptibleGotoLocationTest {
 			public boolean isActive() { return true; }
 		};
 		
-		State currentState = new InterruptibleGotoLocation(rc,MovementType.RUN ,-1 ) {
+		State currentState = new InterruptibleGotoLocation(rc,MovementType.RUN ) {
 
 			@Override
 			protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
@@ -90,7 +90,7 @@ public class InterruptibleGotoLocationTest {
 
 			@Override
 			public boolean setStartAndDestination(AStar finder,boolean retry) {
-				finder.setRoute( from , to );
+				finder.setRoute( from , to , -1 );
 				return true;
 			}
 

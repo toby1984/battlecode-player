@@ -8,7 +8,6 @@ import battlecode.common.GameObject;
 
 public final class EnemyBlacklist extends HashMap<Integer,BlacklistEntry> 
 {
-	
 	public static class BlacklistEntry {
 		
 		public final GameObject object;

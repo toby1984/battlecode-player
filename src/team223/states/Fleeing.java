@@ -28,7 +28,7 @@ public final class Fleeing extends State {
 			if ( centerOfMass != null ) 
 			{
 				Direction d = rc.getLocation().directionTo( centerOfMass ).opposite();
-				if ( d == Direction.OMNI ) { // we're at the center of mass, any direction is better than being here
+				if ( d == Direction.OMNI ) { // we're at the center of mass, any other place is better than being here...
 					d = Utils.randomMovementDirection( rc );
 					if ( d != Direction.NONE ) 
 					{
@@ -43,7 +43,8 @@ public final class Fleeing extends State {
 				{
 					if ( rc.canMove( d ) ) 
 					{
-						if ( rc.getLocation().distanceSquaredTo( RobotPlayer.enemyHQ ) > RobotType.HQ.attackRadiusMaxSquared ) {
+						if ( rc.getLocation().distanceSquaredTo( RobotPlayer.enemyHQ ) > RobotType.HQ.attackRadiusMaxSquared ) 
+						{
 							if ( rc.isActive() ) {
 								rc.move( d );
 							}
