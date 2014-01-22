@@ -53,7 +53,7 @@ public final class HQBehaviour extends RobotBehaviour {
 			}
 		}
 		
-		if ( rc.senseRobotCount() < GameConstants.MAX_ROBOTS ) 
+		if ( rc.senseRobotCount() < GameConstants.MAX_ROBOTS) 
 		{
 			// spawn robot at random location
 			for ( int retry = 4 ; retry > 0 ; retry-- ) 

@@ -6,7 +6,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import team223.AStar;
-import team223.AStar.TimeoutResult;
 import team223.MyConstants;
 import team223.RobotBehaviour;
 import team223.RobotPlayer;
@@ -41,6 +40,8 @@ public final class CowboyBehaviour extends RobotBehaviour {
 	private static final int PASTR_RANGE  = (int) Math.floor( Math.sqrt( PASTR_RANGE_SQUARED ) );
 
 	private static final int PASTR_RANGE_TWICE  = 2*PASTR_RANGE;
+	
+	private static boolean fullSpeedPathFinding = true;	
 
 	// number of tiles within pastr range that need to have a cow growth rate > 0
 	// in order for a MapLocation candidate to be considered a good pastr location
@@ -220,7 +221,7 @@ public final class CowboyBehaviour extends RobotBehaviour {
 		
 		currentDestination = loc;
 		
-		state = new InterruptibleGotoLocation( rc , MovementType.SNEAK) {
+		state = new InterruptibleGotoLocation( rc , MovementType.SNEAK , fullSpeedPathFinding ) {
 
 			@Override
 			protected boolean hasArrivedAtDestination(MapLocation current,MapLocation dstLoc) {
@@ -228,16 +229,17 @@ public final class CowboyBehaviour extends RobotBehaviour {
 			}
 
 			@Override
-			public boolean setStartAndDestination(AStar finder,boolean retry) {
-				finder.setRoute( rc.getLocation() , loc , MyConstants.COWBOY_PATH_FINDING_TIMEOUT_ROUNDS );
+			public boolean setStartAndDestination(boolean retry) {
+				AStar.setRoute( rc.getLocation() , loc , MyConstants.COWBOY_PATH_FINDING_TIMEOUT_ROUNDS );
 				return true;
 			}
 
 			@Override
-			public TimeoutResult onTimeout() {
-				return TimeoutResult.ABORT;
+			public boolean abortOnTimeout() {
+				return true;
 			}
 		}.perform();
+		fullSpeedPathFinding = false;
 	}
 
 	private boolean isTerminallyOccupied(MapLocation loc,RobotController rc) throws GameActionException 

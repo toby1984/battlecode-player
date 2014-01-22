@@ -23,12 +23,12 @@ public class Utils {
 
 	public static MapLocation findRandomLocationNear(RobotController rc,MapLocation center,int minRadius,int maxRadius) {
 
-		final int delta = 1+(maxRadius-minRadius);
+		final int delta = (int) Math.sqrt(maxRadius-minRadius);
 		int retries = 10;
 		do
 		{
-			int x = RobotPlayer.rnd.nextInt(delta);
-			int y = RobotPlayer.rnd.nextInt(delta);
+			int x = minRadius+RobotPlayer.rnd.nextInt(delta);
+			int y = minRadius+RobotPlayer.rnd.nextInt(delta);
 			
 			/*
 			 *  0 | 1
@@ -59,6 +59,10 @@ public class Utils {
 			{
 				case NORMAL:
 				case ROAD:
+					int dist = (int) Math.sqrt( l.distanceSquaredTo( center ) );
+					if ( dist < minRadius || dist > maxRadius ) {
+						throw new RuntimeException("Result out of range ( "+minRadius+" , "+maxRadius+"): center="+center+",result="+l+",distance="+dist);
+					}
 					return l;
 				default:
 			}

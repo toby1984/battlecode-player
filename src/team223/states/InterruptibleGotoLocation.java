@@ -3,78 +3,41 @@ package team223.states;
 import java.util.List;
 
 import team223.AStar;
-import team223.AStar.PathFindingResultCallback;
+import team223.AStar.Callback;
 import team223.MyConstants;
 import team223.State;
+import battlecode.common.Clock;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.MovementType;
-import battlecode.common.Robot;
 import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
 
 public abstract class InterruptibleGotoLocation extends State implements AStar.Callback {
 
-	protected static final int UNKNOWN_HEALTH= -99999;
-	
-	public static boolean INTR_GOTO_LOCATION_VERBOSE = false;
-
-	private final AStar finder;
 	private final MovementType movementType;
 	protected final RobotController rc;
 
-	private State activeState;
+	protected State activeState;
 
-	private double currentHealth = UNKNOWN_HEALTH;
+	private Callback callback;
 	
-	private PathFindingResultCallback callback;
+	private final boolean maxSpeed;
+	private boolean finished;
 	
-	public InterruptibleGotoLocation(final RobotController rc,MovementType movementType)
+	public InterruptibleGotoLocation(final RobotController rc,MovementType movementType,boolean maxSpeed)
 	{
 		super(rc);
 		
 		this.rc = rc;
 		this.movementType = movementType;
-
-		finder = new AStar(rc) {
-
-			@Override
-			public boolean isWalkable(MapLocation loc) throws GameActionException 
-			{
-				if ( rc.canSenseSquare(loc) ) 
-				{
-					Robot object = (Robot) rc.senseObjectAtLocation( loc );
-					if ( object != null ) 
-					{
-						RobotInfo robot = rc.senseRobotInfo( object );
-						switch( robot.type) {
-							case HQ:
-								return false;
-							case NOISETOWER:
-								return robot.team != rc.getTeam();
-							case SOLDIER:
-								// enemies will be killed, friendlies will hopefully go out of the way...
-								return robot.team != rc.getTeam();
-							case PASTR:
-								return robot.team != rc.getTeam();
-							default:
-						}
-					}
-				}
-				return true;				
-			}
-
-			@Override
-			protected boolean isCloseEnoughToTarget(PathNode  node) {
-				return InterruptibleGotoLocation.this.hasArrivedAtDestination( node.value  , destination );
-			}
-		};
+		this.maxSpeed = maxSpeed;
+		AStar.reset();
 	}	
 
 	@Override
 	public final void foundPath(List<MapLocation> path) 
 	{
-		if ( INTR_GOTO_LOCATION_VERBOSE ) System.out.println("Found path , switching to GotoLocation");
+		if ( MyConstants.INTR_GOTO_LOCATION_VERBOSE ) System.out.println("Found path , switching to GotoLocation");
 		
 		activeState = new GotoLocation( rc , path , movementType ) {
 
@@ -84,16 +47,17 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 			}
 			
 			@Override
-			protected State recalculatePath(PathFindingResultCallback callback) throws GameActionException
+			protected State recalculatePath(Callback callback) throws GameActionException
 			{
 				if ( MyConstants.DEBUG_MODE ) System.out.println("Recalculating path ( InterruptibleGotoLocation#foundPath() )");
 				
 				activeState = null;
 				InterruptibleGotoLocation.this.callback = callback;
-				finder.reset();
-				if ( ! setStartAndDestination( finder , true ) ) {
+				AStar.reset();
+				
+				if ( ! setStartAndDestination( true ) ) {
 					if ( MyConstants.DEBUG_MODE ) System.out.println("setStartAndDestination() in recalculatePath() failed");
-					finder.abort();
+					AStar.abort();
 				}
 				return null; // MUST RETURN NULL since GotoLocation#perform() and NOT the outer "this" InterruptibleGotoLocation instance.
 				// This method was invoked by "activeState = activeState.perform() in InterruptibleGotoLocation#perform() ,
@@ -112,8 +76,14 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 	}
 	
 	@Override
-	public final void foundNoPath() {
+	public final void foundNoPath() 
+	{
+		if ( MyConstants.INTR_GOTO_LOCATION_VERBOSE ) {
+			System.out.println("foundNoPath()");
+		}
+		
 		activeState = null;
+		
 		try {
 			if ( callback != null ) {
 				callback.foundNoPath();
@@ -131,42 +101,56 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 	@Override
 	public final State perform() throws GameActionException 
 	{
+		if ( MyConstants.INTR_GOTO_LOCATION_VERBOSE ) System.out.println("Path finder state: "+AStar.getState() );
+		
 		if ( activeState != null ) 
 		{
 			activeState  = activeState.perform();
 			if ( activeState != null ) {
 				return this;
 			}
+			finished = true;
 		}
 		
-		if ( finder.isStarted() ) 
+		if ( AStar.isInterrupted() ) {
+			if ( MyConstants.INTR_GOTO_LOCATION_VERBOSE )  System.out.println("Continueing path finding , round: "+Clock.getRoundNum());				
+			AStar.continueFindPath();
+			return this;
+		}
+		
+		if ( AStar.started ) 
 		{
-			if ( finder.isFinished() ) {
-				if ( INTR_GOTO_LOCATION_VERBOSE ) System.out.println("perform() returns, search finished.");
+			if ( AStar.finished ) {
+				if ( MyConstants.INTR_GOTO_LOCATION_VERBOSE ) System.out.println("perform() returned, search finished.");
 				return null;
 			}
-			if ( finder.isAborted() ) 
+			if ( AStar.aborted ) 
 			{
-				if ( INTR_GOTO_LOCATION_VERBOSE ) System.out.println("Path finding aborted.");
+				if ( MyConstants.INTR_GOTO_LOCATION_VERBOSE ) System.out.println("Path finding aborted.");
 				return null; // 
 			}
-			finder.continueFindPath();
-			return this;
+
+			if ( MyConstants.INTR_GOTO_LOCATION_VERBOSE ) System.out.println("Resetting path finding.");
+			AStar.reset();
 		}
 		
-		if ( INTR_GOTO_LOCATION_VERBOSE ) System.out.println("perform() starts path finding");			
-		
-		finder.reset();
-		
-		if ( setStartAndDestination( finder , false ) ) {
-			finder.findPath( this );
+		if ( ! finished && setStartAndDestination( false ) ) 
+		{
+			if ( maxSpeed ) 
+			{
+				if ( MyConstants.INTR_GOTO_LOCATION_VERBOSE ) System.out.println("perform() starts path finding (non-interruptible)");	
+				AStar.findPathNonInterruptible( this );
+				return null;
+			} 
+			if ( MyConstants.INTR_GOTO_LOCATION_VERBOSE ) System.out.println("perform() starts path finding (interruptible)");					
+			AStar.findPath( this );
 			return this;
-		}
+		} else if ( MyConstants.INTR_GOTO_LOCATION_VERBOSE ) System.out.println("setStartAndDestination() returned false");
 		return null;
 	}
 
 	public final MapLocation getDestination() {
-		return finder.getDestination();
+		return AStar.getDestination();
 	}
 	
 	// Subclassing hooks
@@ -176,17 +160,7 @@ public abstract class InterruptibleGotoLocation extends State implements AStar.C
 	protected void foundNoPathHook() throws GameActionException {
 	}	
 	
-	public State onLowRobotHealth(double currentRobotHealth) 
-	{
-		return null;
-	}
-
-	public State onAttack(double currentRobotHealth) 
-	{
-		return new AttackEnemiesInSight(rc);				
-	}		
-
 	protected abstract boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc);	
 
-	public abstract boolean setStartAndDestination(AStar finder,boolean retry) throws GameActionException;
+	public abstract boolean setStartAndDestination(boolean retry) throws GameActionException;
 }

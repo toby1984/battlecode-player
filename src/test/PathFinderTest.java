@@ -1,12 +1,9 @@
 package test;
 
 import java.util.List;
-import java.util.Random;
 
 import team223.AStar;
 import team223.AStar.Callback;
-import team223.AStar.Result;
-import team223.AStar.TimeoutResult;
 import team223.RobotPlayer;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -35,20 +32,9 @@ public class PathFinderTest {
 			}
 		};
 		
-		AStar finder = new AStar(rc) {
-
-			@Override
-			protected boolean isCloseEnoughToTarget(PathNode  node) {
-				return node.value.equals( to );
-			}
-
-			@Override
-			public boolean isWalkable(MapLocation loc) throws GameActionException {
-				return true;
-			}
-		};
+		AStar.rc = rc;
 		
-		finder.setRoute( from , to , -1 );
+		AStar.setRoute( from , to , -1 );
 		
 		final Callback callback = new Callback() {
 			
@@ -63,23 +49,23 @@ public class PathFinderTest {
 			}
 			
 			@Override
-			public TimeoutResult onTimeout() {
+			public boolean abortOnTimeout() {
 				System.out.println("Timeout");
-				return TimeoutResult.CONTINUE;
+				return false;
 			}
 		};
 		
 		do {
-			if ( ! finder.isStarted() ) {
+			if ( ! AStar.started ) {
 				System.out.println("Starting search...");				
-				finder.findPath( callback );
+				AStar.findPath( callback );
 				System.out.println("Search returned");					
 			} else {
 				System.out.println("Continueing search...");					
-				finder.continueFindPath();
+				AStar.continueFindPath();
 				System.out.println("Search returned");				
 			}
-		} while ( ! finder.isFinished() );
+		} while ( ! AStar.finished );
 		
 	}
 	

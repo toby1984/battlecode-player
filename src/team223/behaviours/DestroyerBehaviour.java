@@ -1,7 +1,6 @@
 package team223.behaviours;
 
 import team223.AStar;
-import team223.AStar.TimeoutResult;
 import team223.EnemyBlacklist;
 import team223.MyConstants;
 import team223.RobotBehaviour;
@@ -24,9 +23,11 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 
 	private static final int DEFAULT_HOMEIN_TIMEOUT = 1000;
 	
-	private static final int MAX_HOMEIN_TIMEOUT =1000;	
+	private static final int MAX_HOMEIN_TIMEOUT = 1000;	
 
 	protected static final int UNKNOWN_HEALTH= -99999;
+
+	private static boolean fullSpeedPathFinding = false;
 	
 	private final EnemyBlacklist enemyBlacklist = new EnemyBlacklist(110);
 	
@@ -44,9 +45,8 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 		if ( state != null ) {
 			state = state.perform();
 			return;
-		}		
-		
-		if ( MyConstants.DEBUG_MODE ) { System.out.println("Sensing enemies, current state: "+state); }
+		} 
+		if ( MyConstants.DESTROYER_VERBOSE ) { System.out.println("Sensing enemies, current state: "+state); }
 		
 		enemyBlacklist.removeStaleEntries();
 		
@@ -55,7 +55,7 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 		
 		if ( currentTarget != null ) 
 		{
-			if ( MyConstants.DEBUG_MODE ) { System.out.println("Picked enemy "+currentTarget.robot ); }	
+			if ( MyConstants.DESTROYER_VERBOSE ) { System.out.println("Picked enemy "+currentTarget.robot ); }	
 			
 			if ( rc.canAttackSquare( currentTarget.info.location ) ) 
 			{
@@ -63,37 +63,31 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 					rc.attackSquare( currentTarget.info.location );
 				}
 				state = new Attacking(rc,currentTarget.robot );
-				if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }					
+				if ( MyConstants.DESTROYER_VERBOSE ) { behaviourStateChanged(); }					
 				return;
 			} 
 			
-			if ( MyConstants.DEBUG_MODE ) { System.out.println("Enemy too far away, calculating path to enemy "+currentTarget.robot+" at "+currentTarget.info.location ); }
+			if ( MyConstants.DESTROYER_VERBOSE ) { System.out.println("Enemy too far away, calculating path to enemy "+currentTarget.robot+" at "+currentTarget.info.location ); }
 			
-			state = new InterruptibleGotoLocation(rc , MovementType.RUN) {
+			state = new InterruptibleGotoLocation(rc , MovementType.RUN , false ) {
 
 				@Override
 				protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
 					return current.equals(dstLoc);
 				}
 				
-				@Override
-				public State onLowRobotHealth(double currentRobotHealth) {
-					// fight till we drop
-					return null;
+				protected void foundNoPathHook() throws GameActionException {
+					if ( MyConstants.DESTROYER_VERBOSE ) System.out.println("foundNoPathHook(): Path finding failure, blacklisting target "+currentTarget);
+					enemyBlacklist.add( currentTarget.robot );
+					enemyBlacklist.removeStaleEntries();					
 				}
 				
 				@Override
-				public State onAttack(double currentRobotHealth) {
-					// fight till we drop
-					return new AttackEnemiesInSight(rc);
-				}
-				
-				@Override
-				public boolean setStartAndDestination(AStar finder,boolean retry) throws GameActionException 
+				public boolean setStartAndDestination(boolean retry) throws GameActionException 
 				{
 					if ( retry ) 
 					{
-						if ( MyConstants.DEBUG_MODE ) System.out.println("Path finding failure, blacklisting target "+currentTarget);
+						if ( MyConstants.DESTROYER_VERBOSE ) System.out.println("Path finding failure, blacklisting target "+currentTarget);
 						enemyBlacklist.add( currentTarget.robot );
 						enemyBlacklist.removeStaleEntries();
 						
@@ -103,56 +97,53 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 							return false;
 						}
 						if ( rc.canAttackSquare( currentTarget.info.location ) ) { // enemy is in range
-							if ( MyConstants.DEBUG_MODE ) System.out.println("Enemy in attack range, not using path finding.");
+							if ( MyConstants.DESTROYER_VERBOSE ) System.out.println("Enemy in attack range, not using path finding.");
 							return false;
 						}
-						finder.setRoute( rc.getLocation() , currentTarget.info.location , 10 );
+						AStar.setRoute( rc.getLocation() , currentTarget.info.location , 10 );
 						return true;
 					} 
 					else if ( currentTarget != null && rc.canSenseObject( currentTarget.robot ) ) 
 					{
 						RobotInfo ri = rc.senseRobotInfo( currentTarget.robot );
 						if ( rc.canAttackSquare( ri.location ) ) { // enemy is in range
-							if ( MyConstants.DEBUG_MODE ) System.out.println("Enemy in attack range, not using path finding.");
+							if ( MyConstants.DESTROYER_VERBOSE ) System.out.println("Enemy in attack range, not using path finding.");
 							return false;
 						}						
-						finder.setRoute( rc.getLocation() , ri.location , 10 );
+						AStar.setRoute( rc.getLocation() , ri.location , 10 );
 						return true;							
 					}
 					return false;
 				}
 
 				@Override
-				public TimeoutResult onTimeout() 
+				public boolean abortOnTimeout() 
 				{
-					if ( MyConstants.DEBUG_MODE ) System.out.println("Path finding timeout, blacklisting target "+currentTarget);
+					if ( MyConstants.DESTROYER_VERBOSE ) System.out.println("Path finding timeout, blacklisting target "+currentTarget);
 					enemyBlacklist.add( currentTarget.robot );
 					enemyBlacklist.removeStaleEntries();			
-					return TimeoutResult.ABORT;
+					return true;
 				}
 			}.perform();
-			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
+			
+			if ( MyConstants.DESTROYER_VERBOSE ) { behaviourStateChanged(); }
 			return;
 		}
 		
 		// home-in on enemy HQ
 		if ( RobotPlayer.enemyHQ.distanceSquaredTo( rc.getLocation() ) > MyConstants.SOLIDER_HOMEIN_ON_HQ_DISTANCE_SQUARED ) 
 		{
-			state = new InterruptibleGotoLocation(rc , MovementType.RUN ) {
+			if ( MyConstants.DESTROYER_VERBOSE ) {
+				System.out.println("Too far from enemy HQ, homing in");
+			}	
+
+			AStar.reset();
+			
+			state = new InterruptibleGotoLocation(rc , MovementType.RUN , fullSpeedPathFinding ) {
 
 				@Override
 				protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
 					return current.equals(dstLoc);
-				}
-				
-				@Override
-				public State onLowRobotHealth(double currentRobotHealth) {
-					return null;
-				}
-				
-				@Override
-				public State onAttack(double currentRobotHealth) {
-					return new AttackEnemiesInSight(rc);
 				}
 				
 				protected void foundPathHook(java.util.List<MapLocation> path) {
@@ -162,43 +153,46 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 				protected void foundNoPathHook() throws GameActionException 
 				{
 					Direction d = Utils.randomMovementDirection(rc);
-					if ( d != Direction.NONE ) 
+					if ( d != Direction.NONE && rc.isActive() ) 
 					{
-						while ( !rc.isActive() ) {
-							rc.yield();
-						}
 						rc.move(d);
 					}
 				}
 
 				@Override
-				public boolean setStartAndDestination(AStar finder, boolean retry) throws GameActionException 
+				public boolean setStartAndDestination(boolean retry) throws GameActionException 
 				{
-					if ( retry ) {
-						Direction d = Utils.randomMovementDirection(rc);
-						if ( d != Direction.NONE ) 
-						{
-							while ( !rc.isActive() ) {
-								rc.yield();
-							}
-							rc.move(d);
-						}
+					if ( MyConstants.DESTROYER_VERBOSE ) {
+						System.out.println("Homing in on enemy HQ,currently at "+rc.getLocation()+"( retry: "+retry+")");
 					}
 					
 					MapLocation dst = Utils.findRandomLocationNear( rc , RobotPlayer.enemyHQ ,  MyConstants.ENEMY_HQ_SAFE_DISTANCE_MIN , MyConstants.ENEMY_HQ_SAFE_DISTANCE_MAX );
-					if ( MyConstants.DEBUG_MODE ) System.out.println("Homing in on enemy HQ at "+RobotPlayer.enemyHQ+" , picked destination: "+dst);						
-					if ( dst != null ) {
-						finder.setRoute( rc.getLocation() , dst , homeInTimeout );
+					if ( MyConstants.DESTROYER_VERBOSE ) System.out.println("Homing in on enemy HQ at "+RobotPlayer.enemyHQ+" , picked destination: "+dst);						
+					if ( dst != null ) 
+					{
+						if ( retry ) 
+						{
+							Direction d = Utils.randomMovementDirection(rc);
+							if ( d != Direction.NONE && rc.isActive() ) 
+							{
+								rc.move(d);
+								rc.yield();
+							}
+						}						
+						AStar.setRoute( rc.getLocation() , dst , homeInTimeout );
 						return true;
 					}
+					if ( MyConstants.DESTROYER_VERBOSE ) {
+						System.out.println("Failed to find random location near enemy HQ");
+					}					
 					return false;
 				}
 
 				@Override
-				public TimeoutResult onTimeout() throws GameActionException 
+				public boolean abortOnTimeout() throws GameActionException 
 				{
 					homeInTimeout=Math.min(MAX_HOMEIN_TIMEOUT , (int) (homeInTimeout*3f ) );	
-					if ( MyConstants.DEBUG_MODE ) System.out.println("Home-in timeout is now "+homeInTimeout);
+					if ( MyConstants.DESTROYER_VERBOSE ) System.out.println("Home-in timeout is now "+homeInTimeout);
 					
 					Direction d = Utils.randomMovementDirection(rc);
 					if ( d != Direction.NONE ) 
@@ -208,24 +202,34 @@ public final class DestroyerBehaviour extends RobotBehaviour {
 						}
 						rc.move(d);
 					}					
-					return TimeoutResult.ABORT;
+					return true;
 				}
 			}.perform();
 			
-			if ( MyConstants.DEBUG_MODE ) { behaviourStateChanged(); }
+			if ( MyConstants.DESTROYER_VERBOSE ) {
+				System.out.println("Path finding returned");
+			}
+			
+			fullSpeedPathFinding = false;
+			
+			if ( MyConstants.DESTROYER_VERBOSE ) { behaviourStateChanged(); }
 		} 
 		else 
 		{
 			if ( rc.getActionDelay() < 1 ) 
 			{
 				wander();
+			} else {
+				if ( MyConstants.DESTROYER_VERBOSE ) {
+					System.out.println("Not wandering, action delay: "+rc.getActionDelay());
+				}					
 			}
 		}
 	}
 	
 	private void wander() throws GameActionException 
 	{
-		if ( MyConstants.DEBUG_MODE ) System.out.println("Wandering");
+		if ( MyConstants.DESTROYER_VERBOSE ) System.out.println("Wandering");
 		
 		if ( rc.isActive() ) 
 		{

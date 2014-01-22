@@ -5,9 +5,9 @@ import battlecode.common.RobotController;
 
 public abstract class RobotBehaviour {
 
-	protected volatile State state;
+	protected static State state;
 	
-	protected final RobotController rc;
+	protected static RobotController rc;
 	
 	public static final RobotBehaviour NOP_BEHAVIOUR = new RobotBehaviour(null) {
 		
@@ -17,7 +17,7 @@ public abstract class RobotBehaviour {
 	};
 	
 	public RobotBehaviour(RobotController rc) {
-		this.rc = rc;
+		RobotBehaviour.rc = rc;
 	}
 	
 	public abstract void perform() throws GameActionException;

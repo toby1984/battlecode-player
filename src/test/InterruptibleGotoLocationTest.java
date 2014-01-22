@@ -1,7 +1,6 @@
 package test;
 
 import team223.AStar;
-import team223.AStar.TimeoutResult;
 import team223.MyConstants;
 import team223.State;
 import team223.states.InterruptibleGotoLocation;
@@ -81,7 +80,7 @@ public class InterruptibleGotoLocationTest {
 			public boolean isActive() { return true; }
 		};
 		
-		State currentState = new InterruptibleGotoLocation(rc,MovementType.RUN ) {
+		State currentState = new InterruptibleGotoLocation(rc,MovementType.RUN, false ) {
 
 			@Override
 			protected boolean hasArrivedAtDestination(MapLocation current, MapLocation dstLoc) {
@@ -89,14 +88,14 @@ public class InterruptibleGotoLocationTest {
 			}
 
 			@Override
-			public boolean setStartAndDestination(AStar finder,boolean retry) {
-				finder.setRoute( from , to , -1 );
+			public boolean setStartAndDestination(boolean retry) {
+				AStar.setRoute( from , to , -1 );
 				return true;
 			}
 
 			@Override
-			public TimeoutResult onTimeout() {
-				return TimeoutResult.CONTINUE;
+			public boolean abortOnTimeout() {
+				return false;
 			}
 		};
 		

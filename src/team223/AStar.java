@@ -9,62 +9,69 @@ import java.util.PriorityQueue;
 import java.util.Stack;
 
 import battlecode.common.Clock;
+import battlecode.common.Direction;
 import battlecode.common.GameActionException;
+import battlecode.common.GameObject;
 import battlecode.common.MapLocation;
+import battlecode.common.Robot;
 import battlecode.common.RobotController;
+import battlecode.common.RobotInfo;
+import battlecode.common.RobotType;
+import battlecode.common.Team;
 import battlecode.common.TerrainTile;
 
-
-public abstract class AStar
+public final class AStar
 {
-	public static final int INTERRUPT_CHECK_INTERVAL = 3;
+	private static final int DEFAULT_INTERRUPT_CHECK_INTERVAL = 10;
+	
+	private static int INTERRUPT_CHECK_INTERVAL = DEFAULT_INTERRUPT_CHECK_INTERVAL;
     
     // nodes to check
-    private HashMap<PathNode,PathNode> openMap = new HashMap<PathNode, PathNode>(2000);
-    private PriorityQueue<PathNode> openList = new PriorityQueue<PathNode>(2000);
+    private static HashMap<PathNode,PathNode> openMap = new HashMap<PathNode, PathNode>(2000);
+    private static PriorityQueue<PathNode> openList = new PriorityQueue<PathNode>(2000);
 
     // nodes ruled out
-    private HashSet<PathNode> closeList = new HashSet<PathNode>();
+    private static HashSet<PathNode> closeList = new HashSet<PathNode>();
 	
-    protected MapLocation start;
-    protected MapLocation destination;
+    protected static MapLocation start;
+    protected static MapLocation destination;
     
-    private final RobotController rc;
+    public static RobotController rc;
     
-    private int iterationCount;
-    private PathNode interruptedNode;
+    public static int mapWidth;
+    public static int mapHeight;
     
-    private boolean started = false;
-    private boolean finished = false;
-    private boolean aborted = false;
+    private static int iterationCount;
+    public static PathNode interruptedNode;
     
-    private int pathFindingTimeout;
+    public static boolean started = false;
+    public static boolean finished = false;
+    public static boolean aborted = false;
+    
+    private static int pathFindingTimeout;
 
-    private int totalElapsedRounds;
-    private int elapsedRounds;
-    private int startedInRound;
+    private static int totalElapsedRounds;
+    private static int startedInRound;
     
-    private Callback callback;
+    private static Callback callback;
+    
+    public static boolean[][] blockedTiles;
+    
+    public static String getState() {
+    	return "started: "+started+" , finished: "+finished+", aborted: "+aborted+" , interrupted: "+isInterrupted();
+    }
     
     public static enum Result {
     	INTERRUPT,ABORT,CONTINUE;
     }
     
-    public static enum TimeoutResult {
-    	ABORT,CONTINUE;
-    }
-    
-    public interface PathFindingResultCallback 
+    public interface Callback 
     {
     	public void foundPath(List<MapLocation> path);
     	
-    	public TimeoutResult onTimeout() throws GameActionException;
+    	public boolean abortOnTimeout() throws GameActionException;
     	
     	public void foundNoPath();    	
-    }
-    
-    public interface Callback extends  PathFindingResultCallback
-    {
     }
     
     public final static class PathNode implements Comparable<PathNode>
@@ -172,42 +179,22 @@ public abstract class AStar
         }
     }
     
-	public AStar(RobotController rc) {
-		this.rc = rc;
+	public static final boolean isInterrupted() {
+		return started && interruptedNode != null;
 	}
 	
-	public final boolean isInterrupted() {
-		return interruptedNode != null;
-	}
-	
-	public final boolean isFinished() {
-		return finished;
-	}
-	
-	public final boolean isStarted() {
-		return started;
-	}
-	
-	public final boolean isAborted() {
-		return aborted;
-	}
-	
-	public final void continueFindPath() throws GameActionException 
+	public static final void continueFindPath() throws GameActionException 
 	{
-		if ( interruptedNode == null || ! started || finished || aborted ) {
-			throw new IllegalStateException("Cannot continue (interrupted: "+isInterrupted()+" , started: "+started+" , finished: "+finished+" , aborted: "+aborted);
-		}
+//		if ( interruptedNode == null || ! started || finished || aborted ) {
+//			throw new IllegalStateException("Cannot continue (interrupted: "+isInterrupted()+" , started: "+started+" , finished: "+finished+" , aborted: "+aborted);
+//		}
 		
 		if ( MyConstants.DEBUG_MODE) System.out.println("Continueing to find path "+start+" -> "+destination);
-		
-    	PathNode current = interruptedNode;
-		interruptedNode = null;    		
-		
-		startedInRound = Clock.getRoundNum();
-		mainLoop(current);
+		mainLoop(interruptedNode);
 	}
 	
-	public final void setRoute(MapLocation from,MapLocation to,int pathFindingTimeout) {
+	public static void setRoute(MapLocation from,MapLocation to,int pathFindingTimeout) 
+	{
 		if ( from == null || to == null ) {
 			throw new IllegalArgumentException("from/to must not be null (from: "+from+" / to: "+to+")");
 		}
@@ -217,18 +204,14 @@ public abstract class AStar
 		}
 		if ( MyConstants.DEBUG_MODE ) 
 		{
-			try {
-				System.out.println("setRoute( timeout= "+pathFindingTimeout+" ): "+from+" -> "+to+" (walkable: "+isWalkable( to )+")" );
-			} catch (GameActionException e) {
-				e.printStackTrace();
-			}
+			System.out.println("setRoute( timeout= "+pathFindingTimeout+" ): "+from+" -> "+to);
 		}
-		this.pathFindingTimeout = pathFindingTimeout;
-		this.start = from;
-		this.destination = to;
+		AStar.pathFindingTimeout = pathFindingTimeout;
+		AStar.start = from;
+		AStar.destination = to;
 	}
 	
-	public final void reset() 
+	public static final void reset() 
 	{
 		if ( MyConstants.DEBUG_MODE) System.out.println("Path finder "+start+" -> "+destination+" reset.");
 		
@@ -236,7 +219,6 @@ public abstract class AStar
     	interruptedNode = null;
     	
     	totalElapsedRounds = 0;
-    	elapsedRounds = 0;
     	
     	aborted = false;
         finished = false;
@@ -247,64 +229,287 @@ public abstract class AStar
         closeList = new HashSet<PathNode>();        
 	}
 	
-	public void abort() 
+	public static void abort() 
 	{
-		this.aborted = true;
-		this.finished = true;
+		AStar.aborted = true;
+		AStar.finished = true;
 	}
 	
-    public final void findPath(Callback callback) throws GameActionException 
+    public static final void findPath(Callback callback) throws GameActionException 
     {
-    	if ( isFinished() || isStarted() || isAborted() ) {
+    	if ( finished || started|| aborted ) {
     		throw new IllegalStateException("You need to call reset() before starting a new search (finished:"+finished+" , started: "+started+", aborted: "+aborted+")");
     	}
     	
+    	INTERRUPT_CHECK_INTERVAL = DEFAULT_INTERRUPT_CHECK_INTERVAL;
+    	
     	reset();
     	
-    	startedInRound = Clock.getRoundNum();
-    	
         started = true;
-        this.callback = callback;
+    	startedInRound = Clock.getRoundNum();           
+        AStar.callback = callback;
         
-		if ( MyConstants.ASTAR_DEBUG_RUNTIME ) System.out.println("Looking for path from "+this.start+" to "+this.destination);
+		if ( MyConstants.ASTAR_DEBUG_RUNTIME ) System.out.println("Looking for path from "+AStar.start+" to "+AStar.destination+" (timeout: "+pathFindingTimeout+")");
 		
-        if ( this.start.equals(  this.destination ) ) { // trivial case
-        	List<MapLocation> result = new ArrayList<MapLocation>();
-        	result.add( this.start );
-        	result.add( this.destination );
-        	
-        	searchFinished( result );
-            return;
-        }
+       	init();
+       	
+       	if ( blockedTiles[destination.x+1][destination.y+1] ) {
+       		System.out.println("Destination "+destination+" blocked (map size: "+rc.getMapWidth()+"x"+rc.getMapHeight()+")");
+       		searchFinished(null);
+       		// printMap( null );
+       		return;
+       	}
         
-        if ( ! isWalkable( this.destination ) || this.destination.distanceSquaredTo( RobotPlayer.enemyHQ ) < MyConstants.ENEMY_HQ_SAFE_DISTANCE_SRT ) 
-        {
-    		if ( MyConstants.DEBUG_MODE) 
-    		{
-    			if ( ! isWalkable( this.destination ) ) {
-    				System.out.println(">>>>>>> Destination "+this.destination+" is not walkable");
-    			} else {
-    				System.out.println(">>>>>>> Destination "+this.destination+" is in enemy HQ firing range");
-    			}
-    		}
-        	searchFinished( null );
-        	return;
-        }
-        
-    	final PathNode start = new PathNode( this.start );
+    	final PathNode start = new PathNode( AStar.start );
     	
         assignCostToStartNode( start );
         closeList.add( start );
 
-		if ( MyConstants.ASTAR_VERBOSE ) System.out.println("Starting search "+this.start+" -> "+this.destination);
         mainLoop( start );
     }
     
-    private final void searchFinished( List<MapLocation> result ) {
+    public static void main(String[] args) throws GameActionException {
+		
+    	RobotPlayer.enemyHQ = new MapLocation(10,10);
+    	RobotPlayer.myHQ = new MapLocation(15,16);
+    	RobotPlayer.myTeam = Team.A;
+    	RobotPlayer.enemyTeam = RobotPlayer.myTeam.opponent();
+    	
+    	mapWidth = 27;
+    	mapHeight = 27;
+    	
+    	final MapLocation myLocation  = new MapLocation(26,26);
+    	MapLocation myDestination = new MapLocation( 5 , 5 );
+    	
+    	start = myLocation;
+    	
+    	rc = new MockRobotController() {
+    		@Override
+    		public MapLocation getLocation() { return myLocation; }
+    		@Override
+    		public GameObject senseObjectAtLocation(MapLocation loc) throws GameActionException 
+    		{
+    			return null;
+    		}
+    		
+    		@Override
+    		public TerrainTile senseTerrainTile(MapLocation loc) {
+    			return TerrainTile.ROAD;
+    		}
+    		
+    		@Override
+    		public RobotInfo senseRobotInfo(Robot r) throws GameActionException {
+    			return null;
+    		}
+    	};
+
+		setRoute( myLocation , myDestination , Integer.MAX_VALUE );
+    	
+    	findPathNonInterruptible( new Callback() {
+			
+			@Override
+			public void foundPath(List<MapLocation> path) {
+				System.out.println("Found path");
+				printMap(path);
+			}
+			
+			@Override
+			public void foundNoPath() {
+				System.out.println("Found no path");				
+				printMap(null);
+			}
+			
+			@Override
+			public boolean abortOnTimeout() throws GameActionException {
+				return false;
+			}
+		});
+	}
+    
+    public static void findPathNonInterruptible(Callback cb) throws GameActionException {
+    	
+    	INTERRUPT_CHECK_INTERVAL = 100000;
+    	try {
+	    	do {
+	    		if ( started ) {
+	    			continueFindPath();
+	    		} else {
+	    			findPath( cb );
+	    		} 
+	    	} while ( ! finished );
+    	} finally {
+    		INTERRUPT_CHECK_INTERVAL = DEFAULT_INTERRUPT_CHECK_INTERVAL;
+    	}
+    }
+    
+    private static void printMap(List<MapLocation> path) {
+    	
+    	for ( int y = 0 ; y < mapHeight+2 ; y++ ) 
+    	{
+    		for ( int x = 0 ; x < mapWidth+2 ; x++ ) 
+    		{
+    			if ( (x-1) == start.x && (y-1) == start.y ) {
+    				System.out.print("S");
+    				continue;
+    			}
+    			if ( (x-1) == destination.x && (y-1) == destination.y ) {
+    				System.out.print("D");
+    				continue;
+    			}    			
+    			if ( (x-1) == RobotPlayer.enemyHQ.x && (y-1) == RobotPlayer.enemyHQ.y ) {
+    				System.out.print("e");
+    				continue;
+    			}  
+    			if ( (x-1) == RobotPlayer.myHQ.x && (y-1) == RobotPlayer.myHQ.y ) {
+    				System.out.print("m");
+    				continue;
+    			}      			
+    			
+    			boolean isOnPath = path != null && path.contains(new MapLocation(x-1,y-1 ) );
+    			if ( blockedTiles[x][y] ) 
+    			{
+    				if ( isOnPath ) {
+    					System.out.print("!");
+    				} else {
+    					System.out.print("x");    					
+    				}
+    			} 
+    			else 
+    			{
+    				if ( isOnPath ) {
+    					System.out.print("P");
+    				} else {
+    					System.out.print("o");
+    				}
+    			}
+    		}
+    		System.out.println();
+    	}
+    }
+    
+	private static void init() throws GameActionException 
+	{
+        int w = mapWidth+2; // +2 because we'll mark the circumference of the map as blocked
+        int h = mapHeight+2;
+        
+        int w2 = w-1;
+        int h2 = h-1;
+        
+		blockedTiles = new boolean[w][];
+		
+        for ( int i = 0 ; i < w ; i++ ) 
+        {
+        	blockedTiles[i]=new boolean[h];        	
+        	if ( i == 0 || i == w2 ) {
+        		for ( int j = 0 ; j < h ; j++ ) 
+        		{
+               		blockedTiles[i][j]=true;        			
+        		}
+        	} 
+       		blockedTiles[i][0]=true;
+       		blockedTiles[i][h2]=true;
+        }
+        
+        // block my HQ
+        // System.out.println("Blocking my HQ at "+RobotPlayer.myHQ);
+        blockedTiles[ 1+RobotPlayer.myHQ.x ][1+RobotPlayer.myHQ.y]=true;
+        
+        // block area around enemy HQ
+        // System.out.println("Blocking enemy HQ at "+RobotPlayer.enemyHQ);
+        blockSquare( RobotPlayer.enemyHQ.x, RobotPlayer.enemyHQ.y , 3 ); // HQ has attack range 15 = 3^2
+        
+        int lx = rc.getLocation().x;
+        int ly = rc.getLocation().y;
+        
+        int locXMin = lx - 4 ;
+        if ( locXMin < 0 ) {
+        	locXMin = 0;
+        }
+        
+        int locYMin = ly - 4 ;
+        if ( locYMin < 0 ) {
+        	locYMin = 0;
+        }        
+
+        int locXMax = lx + 4;
+        if ( locXMax >= mapWidth ) {
+        	locXMax = mapWidth-1;
+        }
+        
+        int locYMax = ly + 4;
+        if ( locYMax >= mapHeight ) {
+        	locYMax = mapHeight-1;
+        }        
+        for ( int x = locXMin ; x <= locXMax ; x++ ) 
+        {
+            for ( int y = locYMin ; y <= locYMax ; y++ ) 
+            {
+            	if ( x !=lx || y != ly) 
+            	{
+            		try {
+            			GameObject object = rc.senseObjectAtLocation( new MapLocation(x,y ) );
+                		if ( object != null ) 
+                		{
+                			RobotInfo info = rc.senseRobotInfo( (Robot) object );
+                			if ( info.team == RobotPlayer.myTeam ) 
+                			{
+                				// something from my team
+                				if( info.type == RobotType.NOISETOWER || info.type == RobotType.PASTR ) 
+                				{
+                			        System.out.println("Blocking my ("+x+","+y+") , occupied by my PASTR or noisetower");
+               						blockedTiles[x+1][y+1]=true;
+                				}            				
+                			}
+                		}            			
+            		} catch(GameActionException e) {
+            			int dist =  new MapLocation(x,y).distanceSquaredTo( rc.getLocation() );
+            			System.out.println("Failed to sense location ("+x+","+y+") while at "+rc.getLocation()+" , type: "+rc.getType()+" , dist: "+dist );
+            		}
+            	}
+            }
+        }
+	}
+	
+	private static void blockSquare(int centerX,int centerY,int radius) 
+	{
+		int xmin = centerX+1-radius;
+		if ( xmin < 0 ) {
+			xmin = 0;
+		}
+		
+		int ymin = centerY+1-radius;
+		if ( ymin < 0 ) {
+			ymin = 0;
+		}
+		
+		int xmax = centerX+1+radius;
+		if ( xmax >= mapWidth+2 ) {
+			xmax = mapWidth+1;
+		}
+		
+		int ymax = centerY+1+radius;
+		if ( ymax >= mapHeight+2 ) 
+		{
+			ymax = mapHeight+1;
+		}		
+		
+        for (int x = xmin ; x <= xmax ; x++ ) 
+        {
+            for (int y = ymin ; y <= ymax ; y++ ) 
+            {
+                // System.out.println("Blocking enemy HQ at "+RobotPlayer.myHQ);            	
+            	blockedTiles[ x ][ y ] = true;
+            }
+        }   
+	}
+    
+    private static final void searchFinished( List<MapLocation> result ) 
+    {
     	finished = true;
     	interruptedNode = null;
     	
-    	if ( result != null ) {
+    	if ( result != null ) 
+    	{
 			if ( MyConstants.ASTAR_DEBUG_RUNTIME ) {
 				System.out.println("*** (elapsed rounds: "+totalElapsedRounds+") Path finding "+start+" -> "+destination+" finished, path length: "+result.size());
 			}
@@ -319,8 +524,9 @@ public abstract class AStar
     	}
     }
     
-    private void mainLoop(PathNode current) throws GameActionException 
+    private static void mainLoop(PathNode current) throws GameActionException 
     {
+    	interruptedNode = null;
         while ( true ) 
         {
         	if ( aborted ) {
@@ -337,15 +543,15 @@ public abstract class AStar
 
             PathNode cheapestPath = openList.remove();
 
-            if ( isCloseEnoughToTarget( cheapestPath ) ) 
+            if ( cheapestPath.value.distanceSquaredTo( destination ) <= 2 ) 
             {
         		List<MapLocation> result = new ArrayList<MapLocation>();
         		do {
         			result.add( cheapestPath.value );
         			cheapestPath = cheapestPath.parent;
         		} while ( cheapestPath != null );
-        		Collections.reverse( result );
         		
+        		Collections.reverse( result );
         		searchFinished( result );
         		return;            	
             }            
@@ -359,42 +565,30 @@ public abstract class AStar
         	{
         		iterationCount = INTERRUPT_CHECK_INTERVAL;
 
-        		if ( MyConstants.ASTAR_DEBUG_RUNTIME ) 
-        		{
-        			System.out.println("Interrupt check");
-            		final int currentRound = Clock.getRoundNum();
-            		int delta = ( currentRound - startedInRound);
-            		
-            		totalElapsedRounds += delta;
-            		elapsedRounds += delta;
-            		startedInRound = currentRound;        			
-        		} else {
-            		final int currentRound = Clock.getRoundNum();
-            		elapsedRounds += ( currentRound - startedInRound);
-            		startedInRound = currentRound;         			
-        		}
+        		final int currentRound = Clock.getRoundNum();
+        		totalElapsedRounds += ( currentRound - startedInRound);
+        		startedInRound = currentRound;         			
         		
-        		if ( elapsedRounds >= pathFindingTimeout ) 
+        		if ( totalElapsedRounds >= pathFindingTimeout ) 
         		{
         			if ( MyConstants.ASTAR_DEBUG_RUNTIME ) System.out.println("!!! ( elapsed: "+totalElapsedRounds+", timeout limit: "+pathFindingTimeout+") Path finding timeout *** ");
-        			switch( callback.onTimeout() ) 
+        			
+        			if( callback.abortOnTimeout() ) 
         			{
-            			case ABORT:
-            				if ( MyConstants.ASTAR_DEBUG_RUNTIME ) {
-            					System.out.println("!!! (Timeout,elapsed: "+totalElapsedRounds+") Aborted at node "+current.value);
-            				}        				
-            				finished = true;
-            				aborted = true;
-            				interruptedNode = null;
-            				return;
-            			default:
+        				if ( MyConstants.ASTAR_DEBUG_RUNTIME ) {
+        					System.out.println("!!! (Timeout,elapsed: "+totalElapsedRounds+") Aborted at node "+current.value);
+        				}        				
+        				finished = true;
+        				aborted = true;
+        				interruptedNode = null;
+        				return;
         			}
         			if ( MyConstants.ASTAR_DEBUG_RUNTIME ) System.out.println("!!! (elapsed rounds: "+totalElapsedRounds+") Path finding continues after timeout ***");
-        			elapsedRounds = 0;        			
+        			totalElapsedRounds = 0;        			
         		}
         		
 				if ( MyConstants.ASTAR_VERBOSE ) {
-					System.out.println("Interruped at node "+current);
+					System.out.println("Interruped at node "+current.value);
 				}
 				interruptedNode = current;
 				return;
@@ -402,32 +596,25 @@ public abstract class AStar
         }    	
     }
     
-    protected abstract boolean isCloseEnoughToTarget( PathNode node ); 
-
-    private void assignCostToStartNode(PathNode current) 
+    private static void assignCostToStartNode(PathNode current) 
     {
-        current.f( (float) 0 + calcEstimatedCost( current ) );
-        current.g( (float) 0 );
+    	//        current.f( (float) 0 + calcEstimatedCost( current ) );
+    	//        current.g( (float) 0 );
+        current.f( 0 + 4*Math.sqrt( destination.distanceSquaredTo(  current.value ) ) ); // movement cost + estimated cost
+        current.g( 0 );
     }    
     
-    public final MapLocation getStart() {
-		return start;
-	}
-    
-    public final MapLocation getDestination() {
+    public static final MapLocation getDestination() {
 		return destination;
 	}
     
-	private final double calcEstimatedCost( team223.AStar.PathNode node) 
-	{
-    	// WEIGHTED A-STAR !!!
-    	return 1.5*Math.sqrt( destination.distanceSquaredTo(  node.value ) );
-	}
-
-	private final void scheduleNeighbors(team223.AStar.PathNode parent) throws GameActionException 
+	private static void scheduleNeighbors(team223.AStar.PathNode parent) throws GameActionException 
 	{
 		int x = parent.value.x;
 		int y = parent.value.y;
+		
+		int newX=0;
+		int newY=0;
 		
 		for ( int dx = -1 ; dx <= 1 ; dx++ ) 
 		{
@@ -435,31 +622,31 @@ public abstract class AStar
 			{
 				if ( dx != 0 || dy != 0 ) 
 				{
-					final MapLocation newLocation = new MapLocation(x+dx,y+dy);
-					if ( newLocation.distanceSquaredTo( RobotPlayer.enemyHQ ) >= MyConstants.ENEMY_HQ_SAFE_DISTANCE_SRT ) 
+					newX = x+dx;
+					newY = y+dy;
+					final MapLocation newLocation = new MapLocation(newX,newY);
+					final TerrainTile tile = rc.senseTerrainTile( newLocation );	
+					if ( ( tile == TerrainTile.NORMAL || tile == TerrainTile.ROAD ) && blockedTiles[newX+1][newY+1]==false )
 					{
-						final TerrainTile tile = rc.senseTerrainTile( newLocation );	
-						if ( ( tile == TerrainTile.NORMAL || tile == TerrainTile.ROAD ) && isWalkable( newLocation ) )
-						{
-							maybeAddNeighbor( parent , newLocation );
-						} 
-					}
+						maybeAddNeighbor( parent , newLocation );
+					} 
 				}
 			}
 		}
 	}	
     
-    private void maybeAddNeighbor(PathNode parent, MapLocation point)
+    private static void maybeAddNeighbor(PathNode parent, MapLocation point)
     {
         final PathNode newNode = new PathNode( point , parent );
         if ( ! closeList.contains(newNode) ) 
         {
             final PathNode existing = openMap.get(newNode);
 
-            final double movementCost = newNode.parent.g + Math.sqrt( newNode.value.distanceSquaredTo( newNode.parent.value ) );
+            final double movementCost = newNode.parent.g + newNode.value.distanceSquaredTo( newNode.parent.value );
+            
             if ( existing == null || movementCost < existing.g ) // prefer shorter path
             {
-    			newNode.f = movementCost + calcEstimatedCost( newNode );
+    			newNode.f = movementCost + 4*Math.sqrt( destination.distanceSquaredTo(  newNode.value ) ); // movementCost + calcEstimatedCost( newNode );
     			newNode.g = movementCost;    			
                 openMap.put(newNode,newNode);
 				openList.add( newNode );
@@ -467,5 +654,344 @@ public abstract class AStar
         }
     }
     
-	public abstract boolean isWalkable(MapLocation loc) throws GameActionException;    
+    protected static class MockRobotController implements RobotController {
+
+		@Override
+		public double getActionDelay() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public double getHealth() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public MapLocation getLocation() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public int getMapWidth() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public int getMapHeight() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public Team getTeam() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Robot getRobot() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public RobotType getType() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public boolean isConstructing() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public RobotType getConstructingType() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public int getConstructingRounds() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public double senseTeamMilkQuantity(Team t) {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public int senseRobotCount() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public GameObject senseObjectAtLocation(MapLocation loc)
+				throws GameActionException {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public <T extends GameObject> T[] senseNearbyGameObjects(Class<T> type) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public <T extends GameObject> T[] senseNearbyGameObjects(Class<T> type,
+				int radiusSquared) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public <T extends GameObject> T[] senseNearbyGameObjects(Class<T> type,
+				int radiusSquared, Team team) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public <T extends GameObject> T[] senseNearbyGameObjects(Class<T> type,
+				MapLocation center, int radiusSquared, Team team) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Robot[] senseBroadcastingRobots() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Robot[] senseBroadcastingRobots(Team t) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public MapLocation[] senseBroadcastingRobotLocations() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public MapLocation[] senseBroadcastingRobotLocations(Team t) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public MapLocation senseLocationOf(GameObject o)
+				throws GameActionException {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public RobotInfo senseRobotInfo(Robot r) throws GameActionException {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public boolean canSenseObject(GameObject o) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean canSenseSquare(MapLocation loc) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public MapLocation senseHQLocation() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public MapLocation senseEnemyHQLocation() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public MapLocation[] sensePastrLocations(Team t) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public double[][] senseCowGrowth() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public double senseCowsAtLocation(MapLocation loc)
+				throws GameActionException {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public int roundsUntilActive() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public boolean isActive() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public void move(Direction dir) throws GameActionException {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void sneak(Direction dir) throws GameActionException {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public boolean canMove(Direction dir) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean canAttackSquare(MapLocation loc) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public void attackSquare(MapLocation loc) throws GameActionException {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void attackSquareLight(MapLocation loc)
+				throws GameActionException {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void broadcast(int channel, int data) throws GameActionException {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public int readBroadcast(int channel) throws GameActionException {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public void spawn(Direction dir) throws GameActionException {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void construct(RobotType type) throws GameActionException {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void yield() {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void selfDestruct() throws GameActionException {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void resign() {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void wearHat() throws GameActionException {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void setIndicatorString(int stringIndex, String newString) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public TerrainTile senseTerrainTile(MapLocation loc) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public long getControlBits() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public void addMatchObservation(String observation) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void setTeamMemory(int index, long value) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void setTeamMemory(int index, long value, long mask) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public long[] getTeamMemory() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public void breakpoint() {
+			// TODO Auto-generated method stub
+			
+		}
+    	
+    }
 }

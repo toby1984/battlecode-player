@@ -2,17 +2,14 @@ package team223.states;
 
 import java.util.List;
 
-import team223.AStar.PathFindingResultCallback;
-import team223.AStar.TimeoutResult;
+import team223.AStar.Callback;
 import team223.MyConstants;
 import team223.State;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.MovementType;
-import battlecode.common.Robot;
 import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
 
 public abstract class GotoLocation extends State {
 
@@ -28,7 +25,7 @@ public abstract class GotoLocation extends State {
 	
 	// private State tempState;
 
-	private final PathFindingResultCallback recalculatePathCallback = new PathFindingResultCallback() {
+	private final Callback recalculatePathCallback = new Callback() {
 
 		@Override
 		public void foundPath(List<MapLocation> path) {
@@ -42,8 +39,8 @@ public abstract class GotoLocation extends State {
 		}
 
 		@Override
-		public TimeoutResult onTimeout() {
-			return TimeoutResult.CONTINUE;
+		public boolean abortOnTimeout() {
+			return false;
 		}
 	};
 
@@ -84,26 +81,28 @@ public abstract class GotoLocation extends State {
 			if ( MyConstants.GOTO_LOCATION_VERBOSE) System.out.println("Arrived at destination "+destination);
 			return null;
 		} 
+		
+		if ( ! rc.isActive() ) {
+			rc.yield();
+		}
 
-		MapLocation myLocation = rc.getLocation();
-		MapLocation next = nextStep( myLocation );
+		MapLocation next = nextStep( rc.getLocation() );
 		if ( next != null ) 
 		{
-			Direction direction = myLocation.directionTo( next );
+			Direction direction = rc.getLocation().directionTo( next );
 			if ( direction == Direction.OMNI ) {
 				return null;
 			}
 			
 			if ( rc.canMove( direction ) )
 			{
-				if ( rc.isActive() ) 
-				{
-					movementFailureCount=0;					
-					if ( movementType == MovementType.RUN ) {
-						rc.move( direction );
-					} else {
-						rc.sneak( direction );
-					}
+				movementFailureCount=0;					
+				if ( movementType == MovementType.RUN ) {
+					if ( MyConstants.GOTO_LOCATION_VERBOSE) System.out.println("Running "+rc.getLocation()+" -> "+next);						
+					rc.move( direction );
+				} else {
+					if ( MyConstants.GOTO_LOCATION_VERBOSE) System.out.println("Sneaking "+rc.getLocation()+" -> "+next);
+					rc.sneak( direction );
 				}
 			} 
 			else 
@@ -123,12 +122,12 @@ public abstract class GotoLocation extends State {
 			return this;
 		} 
 
-		if ( MyConstants.GOTO_LOCATION_VERBOSE) System.out.println("ERROR: At "+myLocation+" , no next step on path "+currentPath+" , recalculating path" );
+		if ( MyConstants.GOTO_LOCATION_VERBOSE) System.out.println("ERROR: At "+rc.getLocation()+" , no next step on path "+currentPath+" , recalculating path" );
 		movementFailureCount = 0;
 		return recalculatePath( recalculatePathCallback );
 	}
 
-	protected abstract State recalculatePath(PathFindingResultCallback callback) throws GameActionException;
+	protected abstract State recalculatePath(Callback callback) throws GameActionException;
 
 	protected abstract boolean hasArrivedAtDestination(MapLocation current,MapLocation dstLoc);
 

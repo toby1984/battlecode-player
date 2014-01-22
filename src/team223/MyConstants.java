@@ -4,12 +4,16 @@ import battlecode.common.RobotType;
 
 public interface MyConstants 
 {
-	public static final boolean DEBUG_MODE = true;
+	public static final boolean DEBUG_MODE = false;
 	
-	public static final boolean DEBUG_BYTECODE_LIMIT = true;
+	public static final boolean DEBUG_BYTECODE_LIMIT = false;
 	
-	public static final boolean COWBOY_VERBOSE = true;
+	public static final boolean COWBOY_VERBOSE = false;
 
+	public static final boolean DESTROYER_VERBOSE = true;
+	
+	public static final boolean INTR_GOTO_LOCATION_VERBOSE = false;	
+	
 	public static final boolean HQ_VERBOSE = false; 
 
 	public static final boolean PASTR_DESTROYER_VERBOSE = false;
