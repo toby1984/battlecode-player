@@ -6,17 +6,18 @@ public class MockRobotController implements RobotController {
 
 	public MapLocation myHQLocation=new MapLocation(5,5);
 	public MapLocation enemyHQLocation=new MapLocation(20,20);
-	public MapLocation robotLocation=new MapLocation(12,22);
 	
 	public double health;
-	public int mapWidth=25;
-	public int mapHeight=25;
 	public Team team = Team.A;
 	
 	public int robotId= 42;
 	public RobotType robotType=RobotType.SOLDIER;
 	
 	private int robotCount=1;	
+	
+	public volatile Direction movementDirection;
+	
+	private volatile GameMap map;
 	
 	public Robot robot = new Robot() {
 
@@ -36,6 +37,23 @@ public class MockRobotController implements RobotController {
 		}
 	};
 	
+	public MockRobotController(GameMap map) {
+		this.map = map;
+	}
+	
+	public MockRobotController() {
+		this.map = map;
+	}	
+	
+	public void setMap(GameMap map) {
+		this.map = map;
+		this.movementDirection = null;
+	}
+	
+	public GameMap getMap() {
+		return map;
+	}
+	
 	@Override
 	public double getActionDelay() {
 		return 0;
@@ -48,17 +66,17 @@ public class MockRobotController implements RobotController {
 
 	@Override
 	public MapLocation getLocation() {
-		return robotLocation;
+		return map.getRobotLocation();
 	}
 
 	@Override
 	public int getMapWidth() {
-		return mapWidth;
+		return map.width;
 	}
 
 	@Override
 	public int getMapHeight() {
-		return mapHeight;
+		return map.height;
 	}
 
 	@Override
@@ -205,10 +223,17 @@ public class MockRobotController implements RobotController {
 
 	@Override
 	public void move(Direction dir) throws GameActionException {
-		if ( ! canMove(dir ) ) {
+		if ( ! canMove( dir ) ) {
 			throw new IllegalStateException("Cannot sneak to from "+getLocation()+" -> "+getLocation().add( dir ) );
 		}
-		robotLocation = getLocation().add( dir );		
+		movementDirection=dir;
+	}
+	
+	public synchronized void tick() {
+		if ( movementDirection != null ) {
+			map.setRobotLocation( map.getRobotLocation().add( movementDirection ) );
+			this.movementDirection = null;
+		}
 	}
 
 	@Override
@@ -217,16 +242,20 @@ public class MockRobotController implements RobotController {
 		if ( ! canMove(dir ) ) {
 			throw new IllegalStateException("Cannot sneak to from "+getLocation()+" -> "+getLocation().add( dir ) );
 		}
-		robotLocation = getLocation().add( dir );
+		movementDirection=dir;
 	}
 
 	@Override
 	public boolean canMove(Direction dir) 
 	{
-		switch( senseTerrainTile( getLocation().add( dir ) ) ) {
-		case NORMAL:
-		case ROAD:
-			return getLocation().distanceSquaredTo( getLocation() ) <= 2; 
+		if ( movementDirection != null ) {
+			return false;
+		}
+		switch( senseTerrainTile( getLocation().add( dir ) ) ) 
+		{
+			case NORMAL:
+			case ROAD:
+				return true;
 			default:
 				return false;
 		}
@@ -283,8 +312,12 @@ public class MockRobotController implements RobotController {
 	}
 
 	@Override
-	public TerrainTile senseTerrainTile(MapLocation loc) {
-		return TerrainTile.VOID;
+	public TerrainTile senseTerrainTile(MapLocation loc) 
+	{
+		if ( loc.x < 0 || loc.y < 0 || loc.x >= map.width || loc.y >= map.height ) {
+			return TerrainTile.OFF_MAP;
+		}
+		return map.isBlocked( loc.x , loc.y ) ? TerrainTile.VOID : TerrainTile.NORMAL;
 	}
 
 	@Override
