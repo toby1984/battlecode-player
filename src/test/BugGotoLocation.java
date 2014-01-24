@@ -10,9 +10,13 @@ import battlecode.common.RobotController;
 
 public class BugGotoLocation extends State {
 
+	private static final boolean VERBOSE = false;
+	
+	private static final Direction[] DIRS = { Direction.NORTH , Direction.NORTH_EAST,Direction.EAST,Direction.SOUTH_EAST,Direction.SOUTH,
+		Direction.SOUTH_WEST,Direction.WEST,Direction.NORTH_WEST};
+	
 	private final MapLocation destination;
 	
-	private Bresenham bresenham;
 	private List<MapLocation> mLine;
 	
 	private Direction initialHeading;
@@ -28,9 +32,14 @@ public class BugGotoLocation extends State {
 		this.destination = destination;
 	}
 	
+	private boolean isOnLine(MapLocation l) {
+		return mLine.contains( l );
+	}	
+	
 	private MapLocation nextStepNoRemove(MapLocation current) 
 	{
-		for ( int i = 0 ; i < mLine.size() ; i++ ) {
+		for ( int i = 0 ; i < mLine.size() ; i++ ) 
+		{
 			if ( mLine.get(i).equals( current ) ) {
 				if ( (i+1) < mLine.size() ) 
 				{
@@ -44,13 +53,15 @@ public class BugGotoLocation extends State {
 	
 	private MapLocation nextStep(MapLocation current) 
 	{
-		for ( int i = 0 ; i < mLine.size() ; i++ ) {
-			if ( mLine.get(i).equals( current ) ) {
+		for ( int i = 0 ; i < mLine.size() ; i++ ) 
+		{
+			if ( mLine.get(i).equals( current ) ) 
+			{
 				if ( (i+1) < mLine.size() ) 
 				{
 					if ( (i-1) >= 0 ) {
 						MapLocation removed = mLine.remove(i-1);
-						System.out.println("Dequeued "+removed+" , remaining: "+mLine);
+						if ( VERBOSE) System.out.println("Dequeued "+removed+" , remaining: "+mLine);
 						return mLine.get(i);
 					}
 					return mLine.get(i+1);
@@ -59,10 +70,6 @@ public class BugGotoLocation extends State {
 			}
 		}
 		return null;
-	}
-	
-	private boolean isOnLine(MapLocation l) {
-		return mLine.contains( l );
 	}
 	
 	private void updateMinHit(MapLocation l) 
@@ -78,26 +85,27 @@ public class BugGotoLocation extends State {
 	public State perform() throws GameActionException 
 	{
 		if ( rc.getLocation().equals( destination ) ) {
-			System.out.println("Destination reached");
+			if ( VERBOSE) System.out.println("Destination reached");
 			return null;
 		}
 		
-		if ( bresenham == null ) {
-			bresenham= new Bresenham();
-			bresenham.setRoute( rc.getLocation() , destination );
-			mLine = bresenham.line();
+		if ( mLine == null ) {
+			mLine = Bresenham.line(rc.getLocation() , destination );
 			initialHeading= rc.getLocation().directionTo( mLine.get(1) );
 			currentHeading=initialHeading;
+		}
+		
+		if ( ! rc.isActive() ) {
+			return this;
 		}
 		
 		if ( avoidingObstacle ) 
 		{
 			if ( isOnLine( rc.getLocation() ) ) 
 			{
-				// we're back on track again
 				Direction d = rc.getLocation().directionTo( nextStepNoRemove( rc.getLocation() ) );
 				if ( isWalkable( rc.getLocation().add( d ) ) ) {
-					System.out.println("Back on track at "+rc.getLocation()+", remaining path: "+mLine); 
+					if ( VERBOSE) System.out.println("Back on track at "+rc.getLocation()+", remaining path: "+mLine); 
 					rc.move( d ); 
 					currentHeading=initialHeading;
 					avoidingObstacle=false;
@@ -106,15 +114,16 @@ public class BugGotoLocation extends State {
 				}
 				
 				if ( rc.getLocation().equals( minHit ) ) {
-					System.out.println("Walking in circles, no path.");
+					if ( VERBOSE) System.out.println("Walking in circles, no path.");
 					return null;					
 				}
 				
 				updateMinHit(rc.getLocation());
 				
-				System.out.println("Back on track but not walkable");
+				if ( VERBOSE) System.out.println("Back on track but not walkable");
 				d = initialHeading;
-				for ( int i=7; i > 0 ; i-- ) {
+				for ( int i=7; i > 0 ; i-- ) 
+				{
 					d = d.rotateLeft();
 					MapLocation newLoc = rc.getLocation().add( d );
 					if ( isWalkable( newLoc ) ) 
@@ -124,24 +133,25 @@ public class BugGotoLocation extends State {
 						return this;
 					}
 				}				
-				System.out.println("Surrounded ??!");
+				if ( VERBOSE) System.out.println("Surrounded ??!");
 				return null;
 			}
 			
-			Direction newDir = rotate( currentHeading, 90 );
+			Direction newDir = rotateRight90(currentHeading); // rotate( currentHeading, 90 );
 			if ( isWalkable( rc.getLocation().add( newDir ) ) ) 
 			{
 				currentHeading = newDir;				
 				rc.move( newDir );
 				return this;
 			}
-			newDir = rotate( currentHeading , 45 );
+			newDir = rotateRight45(currentHeading); // rotate( currentHeading , 45 );
 			if ( isWalkable( rc.getLocation().add( newDir ) ) ) 
 			{
 				currentHeading=newDir;
 				rc.move( newDir );
 				return this;
 			}			
+			
 			newDir = currentHeading;
 			if ( isWalkable( rc.getLocation().add( newDir ) ) ) 
 			{
@@ -188,78 +198,60 @@ public class BugGotoLocation extends State {
 					return this;
 				}
 			}
-			System.out.println("Surrounded ??!");
+			if ( VERBOSE) System.out.println("Surrounded ??!");
 			return null;
 		}
-		System.out.println("End of path reached");
+		if ( VERBOSE) System.out.println("End of path reached?");
 		return null;
 	}
 	
-	private static final Direction[] DIRS = { Direction.NORTH , Direction.NORTH_EAST,Direction.EAST,Direction.SOUTH_EAST,Direction.SOUTH,
-		Direction.SOUTH_WEST,Direction.WEST,Direction.NORTH_WEST};
-	
-	private static Direction rotate(Direction d, int degrees) {
-		switch( degrees ) 
-		{
-			case -90:
-				return getDirection( getDirIndex( d ) - 1 );
-			case -45:
-				return getDirection( getDirIndex( d )- 1 );
-			case 0:
-				return d;
-			case 45:
-				return getDirection( getDirIndex( d )+1 );
-			case 90:
-				return getDirection( getDirIndex( d )+2 );	
-			default:
-				throw new IllegalArgumentException("Invalid angle: "+degrees);
-		}
-	}
-	
-	private static int getDirIndex(Direction d) 
+	private static Direction rotateRight90(Direction d) 
 	{
 		switch( d ) {
 			case NORTH:
-				return 0;
+				return Direction.EAST;
 			case NORTH_EAST:
-				return 1;
+				return Direction.SOUTH_EAST;
 			case EAST:
-				return 2;
+				return Direction.SOUTH;
 			case SOUTH_EAST:
-				return 3;
+				return Direction.SOUTH_WEST;
 			case SOUTH:
-				return 4;
+				return Direction.WEST;
 			case SOUTH_WEST:
-				return 5;
+				return Direction.NORTH_WEST;
 			case WEST:
-				return 6;
+				return Direction.NORTH;
 			case NORTH_WEST:
-				return 7;
+				return Direction.NORTH_EAST;
+			default:
+				throw new RuntimeException("Unreachable code reached");
 		}
-		throw new RuntimeException("Unreachable code reached");
-	}
+	}	
 	
-	private static Direction getDirection(int index) {
-		if ( index < 0 ) {
-			index = DIRS.length+index;
-		} else if ( index >= DIRS.length ) {
-			index -= DIRS.length;
-		}
-		return DIRS[index];
-	}
-	
-	private Direction getDirectionTowardsInitialDir() 
+	private static Direction rotateRight45(Direction d) 
 	{
-		int i1 = getDirIndex(initialHeading);
-		int i2 = getDirIndex(currentHeading);
-		if ( i1==i2) {
-			return initialHeading;
-		} 
-		if ( i2 < i1 ) {
-			return getDirection(i2+1);
+		switch( d ) {
+			case NORTH:
+				return Direction.NORTH_EAST;
+			case NORTH_EAST:
+				return Direction.EAST;
+			case EAST:
+				return Direction.SOUTH_EAST;
+			case SOUTH_EAST:
+				return Direction.SOUTH;
+			case SOUTH:
+				return Direction.SOUTH_WEST;
+			case SOUTH_WEST:
+				return Direction.WEST;
+			case WEST:
+				return Direction.NORTH_WEST;
+			case NORTH_WEST:
+				return Direction.NORTH;
+			default:
+				throw new RuntimeException("Unreachable code reached");
 		}
-		return getDirection(i2-1);
-	}
+	}	
 	
 	private boolean isWalkable(MapLocation l)
 	{

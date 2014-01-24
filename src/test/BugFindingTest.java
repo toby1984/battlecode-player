@@ -14,6 +14,7 @@ import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -317,12 +318,10 @@ public class BugFindingTest
 				g.drawLine( 0 , py , w , py );
 			}			
 
-			Bresenham bresenham=null;
+			List<MapLocation> pointsOnLine=null;
 			if ( BugFindingTest.this.start != null && getMap().hasDestination() )
 			{
-				bresenham = new Bresenham();
-				bresenham.setRoute( BugFindingTest.this.start , getMap().getDestination() );
-				bresenham.line();
+				pointsOnLine = Bresenham.line( BugFindingTest.this.start , getMap().getDestination() );
 			}
 
 			for (int x = 0 ; x < getMap().width ; x++ ) 
@@ -343,7 +342,7 @@ public class BugFindingTest
 					{
 						fillCell( l , Color.BLACK , g );
 					} 
-					else if ( bresenham != null && bresenham.isOnLine( l ) ) {
+					else if ( pointsOnLine != null && pointsOnLine.contains( l ) ) {
 						fillCell( l , Color.GREEN  , "L" , g );
 					} 
 				}

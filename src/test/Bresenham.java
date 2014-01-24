@@ -1,43 +1,15 @@
 package test;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
 import battlecode.common.MapLocation;
 
-public class Bresenham {
+public final class Bresenham {
 
-	private HashSet<MapLocation> set =new HashSet<MapLocation>();
-
-	private MapLocation start;	
-	private MapLocation destination;
-
-	// bresenham state
-	private int t;
-	private int parallelDx;
-	private int parallelDy;
-
-	private int diagDx;
-	private int diagDy;
-
-	private int err;
-	private int errorFast;
-	private int errorSlow;	
-	
-	private int x;
-	private int y;		
-	
-	public Bresenham() {
-	}
-
-	public boolean isOnLine(MapLocation l) {
-		return set.contains( l );
-	}
-	
-	public void setRoute(MapLocation start , MapLocation destination) 
+	public static List<MapLocation> line(MapLocation start , MapLocation destination) 
 	{
-		set.clear();
+		final ArrayList<MapLocation> list = new ArrayList<MapLocation>();	
 		
 		int dx = destination.x - start.x;
 		int dy = destination.y - start.y;
@@ -48,6 +20,14 @@ public class Bresenham {
 		if (dx<0) dx = -dx;
 		if (dy<0) dy = -dy;
 
+		int parallelDx;
+		int parallelDy;
+		int diagDx;
+		int diagDy;
+		int err;
+		int errorFast;
+		int errorSlow;	
+				
 		if (dx>dy)
 		{
 			/* x axis increment is largest */
@@ -69,24 +49,13 @@ public class Bresenham {
 			errorSlow =dy;
 		}
 
-		x = start.x;
-		y = start.y;
+		int x = start.x;
+		int y = start.y;
 		err = errorSlow/2;			
 		
-		t = 0;
-	}
-
-	public List<MapLocation> line()
-	{
-		final ArrayList<MapLocation> list = new ArrayList<MapLocation>();
+		list.add(new MapLocation(x,y) );
 		
-		MapLocation l = new MapLocation(x,y) ; 
-		
-		set.clear();
-		set.add( l );
-		list.add(l);
-		
-		for( t = 0 ; t < errorSlow; ++t)
+		for( int t = 0 ; t < errorSlow; ++t)
 		{
 			err -= errorFast; // update error term
 			if ( err < 0 )
@@ -103,36 +72,8 @@ public class Bresenham {
 				x += parallelDx;
 				y += parallelDy;
 			}
-
-			l = new MapLocation(x,y) ; 
-			set.add( l );
-			list.add( l );
+			list.add( new MapLocation(x,y) );
 		}
 		return list;
-	}
-	
-	public MapLocation onePoint() 
-	{
-		while( t < errorSlow )
-		{
-			err -= errorFast; // update error term
-			if ( err < 0 )
-			{
-				/* step alongside slow axis / diagonal step*/
-				x += diagDx;
-				y += diagDy;
-
-				err += errorSlow; // adjust error term					
-			} 
-			else
-			{
-				/* step alongside fast axis / parallel step*/
-				x += parallelDx;
-				y += parallelDy;
-			}
-			t++;
-			return new MapLocation(x,y) ; 
-		}
-		return null;
-	}
+	}	
 }
