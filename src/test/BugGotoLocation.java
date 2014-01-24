@@ -1,8 +1,7 @@
 package test;
 
-import java.util.List;
-
 import team223.State;
+import test.PathList.Node;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
@@ -10,14 +9,11 @@ import battlecode.common.RobotController;
 
 public class BugGotoLocation extends State {
 
-	private static final boolean VERBOSE = false;
-	
-	private static final Direction[] DIRS = { Direction.NORTH , Direction.NORTH_EAST,Direction.EAST,Direction.SOUTH_EAST,Direction.SOUTH,
-		Direction.SOUTH_WEST,Direction.WEST,Direction.NORTH_WEST};
+	private static final boolean VERBOSE = true;
 	
 	private final MapLocation destination;
 	
-	private List<MapLocation> mLine;
+	private PathList mLine;
 	
 	private Direction initialHeading;
 	private Direction currentHeading;
@@ -38,38 +34,15 @@ public class BugGotoLocation extends State {
 	
 	private MapLocation nextStepNoRemove(MapLocation current) 
 	{
-		for ( int i = 0 ; i < mLine.size() ; i++ ) 
-		{
-			if ( mLine.get(i).equals( current ) ) {
-				if ( (i+1) < mLine.size() ) 
-				{
-					return mLine.get(i+1);
-				}
-				return null;
-			}
-		}
-		return null;
+		Node n= mLine.nextStepNoAdvance( current );
+		return n != null ? n.map : null;
 	}	
 	
 	private MapLocation nextStep(MapLocation current) 
 	{
-		for ( int i = 0 ; i < mLine.size() ; i++ ) 
-		{
-			if ( mLine.get(i).equals( current ) ) 
-			{
-				if ( (i+1) < mLine.size() ) 
-				{
-					if ( (i-1) >= 0 ) {
-						MapLocation removed = mLine.remove(i-1);
-						if ( VERBOSE) System.out.println("Dequeued "+removed+" , remaining: "+mLine);
-						return mLine.get(i);
-					}
-					return mLine.get(i+1);
-				}
-				return null;
-			}
-		}
-		return null;
+		Node n= mLine.nextStep( current );
+		if ( VERBOSE) System.out.println("nextStep( "+current+") => "+n+" , remaining: "+mLine);
+		return n != null ? n.map : null;
 	}
 	
 	private void updateMinHit(MapLocation l) 
@@ -91,7 +64,7 @@ public class BugGotoLocation extends State {
 		
 		if ( mLine == null ) {
 			mLine = Bresenham.line(rc.getLocation() , destination );
-			initialHeading= rc.getLocation().directionTo( mLine.get(1) );
+			initialHeading= rc.getLocation().directionTo( mLine.first.next.map );
 			currentHeading=initialHeading;
 		}
 		
@@ -101,7 +74,7 @@ public class BugGotoLocation extends State {
 		
 		if ( avoidingObstacle ) 
 		{
-			if ( isOnLine( rc.getLocation() ) ) 
+			if ( mLine.remainingContains( rc.getLocation() ) ) 
 			{
 				Direction d = rc.getLocation().directionTo( nextStepNoRemove( rc.getLocation() ) );
 				if ( isWalkable( rc.getLocation().add( d ) ) ) {
@@ -185,6 +158,9 @@ public class BugGotoLocation extends State {
 			}
 			
 			// obstacle !!
+			if ( VERBOSE ) {
+				System.out.println("Hit obstacle.");
+			}
 			updateMinHit(rc.getLocation());
 			
 			for ( int i=7; i > 0 ; i-- ) {

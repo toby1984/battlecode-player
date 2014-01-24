@@ -1,15 +1,12 @@
 package test;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import battlecode.common.MapLocation;
 
 public final class Bresenham {
 
-	public static List<MapLocation> line(MapLocation start , MapLocation destination) 
+	public static PathList line(MapLocation start , MapLocation destination) 
 	{
-		final ArrayList<MapLocation> list = new ArrayList<MapLocation>();	
+		final PathList list = new PathList();
 		
 		int dx = destination.x - start.x;
 		int dy = destination.y - start.y;

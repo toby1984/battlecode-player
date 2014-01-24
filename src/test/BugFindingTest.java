@@ -318,7 +318,7 @@ public class BugFindingTest
 				g.drawLine( 0 , py , w , py );
 			}			
 
-			List<MapLocation> pointsOnLine=null;
+			PathList pointsOnLine=null;
 			if ( BugFindingTest.this.start != null && getMap().hasDestination() )
 			{
 				pointsOnLine = Bresenham.line( BugFindingTest.this.start , getMap().getDestination() );
